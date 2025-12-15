@@ -1,0 +1,99 @@
+﻿@page
+@model WypozyczalniaApp.Pages.Wynajmy.CreateModel
+
+@{
+    ViewData["Title"] = "Nowy Wynajem";
+}
+
+<h1 class="mb-4">Rejestracja Nowego Wynajmu</h1>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fa-solid fa-file-signature me-2"></i>Formularz Wynajmu</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+
+                    <div class="form-group mb-3">
+                        <label asp-for="Wynajem.KlientId" class="control-label fw-bold">Klient</label>
+                        <select asp-for="Wynajem.KlientId" class="form-select" asp-items="ViewBag.KlientId">
+                            <option value="">-- Wybierz Klienta --</option>
+                        </select>
+                        <span asp-validation-for="Wynajem.KlientId" class="text-danger"></span>
+                        <small class="form-text text-muted"><a asp-page="/Klienci/Create">Dodaj nowego klienta</a> jeśli nie ma go na liście.</small>
+                    </div>
+
+
+                    <div class="form-group mb-3">
+                        <label asp-for="Wynajem.PojazdId" class="control-label fw-bold">Pojazd (Dostępne)</label>
+                        <select asp-for="Wynajem.PojazdId" class="form-select" asp-items="ViewBag.PojazdId">
+                            <option value="">-- Wybierz Pojazd --</option>
+                        </select>
+                        <span asp-validation-for="Wynajem.PojazdId" class="text-danger"></span>
+                    </div>
+
+
+                    <div class="form-group mb-3">
+                        <label asp-for="Wynajem.LokalizacjaOdbioruId" class="control-label fw-bold">Miejsce Odbioru</label>
+                        <select asp-for="Wynajem.LokalizacjaOdbioruId" class="form-select" asp-items="ViewBag.LokalizacjaOdbioruId"></select>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label asp-for="Wynajem.DataWypozyczenia" class="control-label">Data Odbioru</label>
+             
+                                <input asp-for="Wynajem.DataWypozyczenia" class="form-control" type="datetime-local" asp-format="{0:yyyy-MM-ddTHH:mm}" />
+                                <span asp-validation-for="Wynajem.DataWypozyczenia" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label asp-for="Wynajem.DataZwrotuPlanowana" class="control-label">Planowany Zwrot</label>
+           
+                                <input asp-for="Wynajem.DataZwrotuPlanowana" class="form-control" type="datetime-local" asp-format="{0:yyyy-MM-ddTHH:mm}" />
+                                <span asp-validation-for="Wynajem.DataZwrotuPlanowana" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info mt-3">
+                        <i class="fa-solid fa-calculator me-2"></i>
+                        Koszt całkowity zostanie obliczony automatycznie na podstawie cennika modelu i czasu trwania.
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="fa-solid fa-check me-2"></i>Zatwierdź Wynajem
+                        </button>
+                        <a asp-page="Index" class="btn btn-secondary">Anuluj</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 bg-light">
+            <div class="card-body">
+                <h4><i class="fa-solid fa-circle-info text-info me-2"></i>Zasady Wynajmu</h4>
+                <ul class="list-group list-group-flush mt-3 bg-transparent">
+                    <li class="list-group-item bg-transparent"><i class="fa-solid fa-user-check me-2"></i>Pracownik obsługujący: <strong>@User.Identity?.Name</strong></li>
+                    <li class="list-group-item bg-transparent"><i class="fa-solid fa-car-on me-2"></i>Pojazd zostanie automatycznie oznaczony jako <strong>Wynajęty</strong>.</li>
+                    <li class="list-group-item bg-transparent"><i class="fa-solid fa-file-invoice-dollar me-2"></i>Faktura zostanie wygenerowana po zakończeniu wynajmu.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

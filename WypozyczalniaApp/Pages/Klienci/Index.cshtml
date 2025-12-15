@@ -1,0 +1,241 @@
+﻿@page
+@model WypozyczalniaApp.Pages.Klienci.IndexModel
+@using Microsoft.AspNetCore.Html;
+
+@{
+    ViewData["Title"] = "Klienci";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 text-gray-800"><i class="fa-solid fa-users me-2"></i>Klienci</h1>
+
+    <div class="btn-group" role="group">
+
+        <form method="post" asp-page-handler="ExportCsv" class="d-inline">
+            <button type="submit" class="btn btn-sm btn-info text-white shadow-sm me-2" title="Eksport danych dla klientów (CSV)">
+                <i class="fa-solid fa-file-csv me-1"></i> Eksport (CSV)
+            </button>
+        </form>
+
+        <a asp-page="Create" class="btn btn-primary shadow-sm">
+            <i class="fa-solid fa-plus me-1"></i> Dodaj Klienta
+        </a>
+    </div>
+</div>
+
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+
+
+            <div class="col-md-1">
+                <label for="IdSearch" class="form-label small text-muted">ID</label>
+                <input type="number" id="IdSearch" name="IdSearch" value="@Model.IdSearch" class="form-control" placeholder="ID" />
+            </div>
+
+            <div class="col-md-2">
+                <label for="ImieSearch" class="form-label small text-muted">Imię</label>
+                <input type="text" id="ImieSearch" name="ImieSearch" value="@Model.ImieSearch" class="form-control" placeholder="Imię..." />
+            </div>
+
+            <div class="col-md-3">
+                <label for="NazwiskoSearch" class="form-label small text-muted">Nazwisko</label>
+                <input type="text" id="NazwiskoSearch" name="NazwiskoSearch" value="@Model.NazwiskoSearch" class="form-control" placeholder="Nazwisko..." />
+            </div>
+
+            <div class="col-md-3">
+                <label for="EmailSearch" class="form-label small text-muted">E-mail</label>
+                <input type="email" id="EmailSearch" name="EmailSearch" value="@Model.EmailSearch" class="form-control" placeholder="email@domena.pl" />
+            </div>
+
+            <div class="col-md-3 d-flex justify-content-end">
+                <button type="submit" class="btn btn-primary me-2"><i class="fa-solid fa-filter me-1"></i> Filtruj</button>
+                <a asp-page="./Index" class="btn btn-outline-secondary"><i class="fa-solid fa-xmark me-1"></i> Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow mb-4">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                @{
+                                    string GetSortArrow(string column)
+                                    {
+                                        if (Model.SortColumn != column) return "";
+                                        return Model.SortDirection == "Asc" ? "fa-arrow-up" : "fa-arrow-down";
+                                    }
+                                    string GetNextSortDirection(string currentColumn)
+                                    {
+                                        if (Model.SortColumn != currentColumn) return "Asc";
+                                        return Model.SortDirection == "Asc" ? "Desc" : "Asc";
+                                    }
+
+                                    IHtmlContent CreateSortLink(string columnName, string display, string defaultDir = "Asc")
+                                    {
+                                        var nextDir = GetNextSortDirection(columnName);
+
+                                        var url = Url.Page("./Index", new
+                                        {
+                                            SortColumn = columnName,
+                                            SortDirection = nextDir,
+                                            IdSearch = Model.IdSearch,
+                                            ImieSearch = Model.ImieSearch,
+                                            NazwiskoSearch = Model.NazwiskoSearch,
+                                            EmailSearch = Model.EmailSearch
+                                        });
+
+                                        return new HtmlString($@"
+                                                                <a href='{url}' class='text-decoration-none text-dark fw-bold'>
+                                                                {display} <i class='fa-solid {GetSortArrow(columnName)} ms-1'></i>
+                                                                </a>");
+                                    }
+                                }
+                                <th class="ps-4">@CreateSortLink("Id", "ID")</th>
+                                <th>@CreateSortLink("Imie", "Imię")</th>
+                                <th>@CreateSortLink("Nazwisko", "Nazwisko")</th>
+                                <th>@CreateSortLink("Email", "E-mail")</th>
+                                <th>@CreateSortLink("NumerTelefonu", "Numer Telefonu")</th>
+                                <th class="text-end pe-4">Akcje</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.Klienci.Any())
+                            {
+                                @foreach (var klient in Model.Klienci)
+                                {
+                                    <tr>
+                                        <td class="ps-4 small text-muted">#@klient.KlientId</td>
+                                        <td class="fw-bold">@klient.Imie</td>
+                                        <td class="fw-bold">@klient.Nazwisko</td>
+                                        <td>@klient.Email</td>
+                                        <td>@(string.IsNullOrEmpty(klient.NumerTelefonu) ? "Brak" : klient.NumerTelefonu)</td>
+                                        <td class="text-end pe-4">
+                                            <div class="btn-group" role="group">
+                                              
+                                                <button type="button"
+                                                        class="btn btn-sm btn-info text-white"
+                                                        title="Pokaż aktualne wynajmy"
+                                                        data-klient-id="@klient.KlientId"
+                                                        data-klient-nazwisko="@klient.Nazwisko"
+                                                        data-klient-imie="@klient.Imie"
+                                                        onclick="loadClientRentals('@klient.KlientId', '@klient.Imie', '@klient.Nazwisko')">
+                                                    <i class="fa-solid fa-circle-info"></i>
+                                                </button>
+
+                                                <a asp-page="./Edit" asp-route-id="@klient.KlientId" class="btn btn-sm btn-outline-primary" title="Edytuj">
+                                                    <i class="fa-solid fa-pen-to-square"></i>
+                                                </a>
+                                                <a asp-page="./Delete" asp-route-id="@klient.KlientId" class="btn btn-sm btn-outline-danger" title="Usuń">
+                                                    <i class="fa-solid fa-trash-can"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-4">Brak klientów spełniających kryteria wyszukiwania.</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="col-md-4">
+        <div class="card shadow-sm border-info border-start-0 border-end-0 border-top-0 border-bottom-4 sticky-top" style="top: 15px;">
+            <div class="card-header py-3 bg-primary text-white">
+                <h6 class="m-0 font-weight-bold">Szczegóły Wynajmów Klienta</h6>
+            </div>
+            <div class="card-body">
+                <div id="ClientRentalDetails">
+                    <p class="text-center text-muted mt-3">Wybierz klienta, klikając ikonę <i class="fa-solid fa-circle-info"></i>.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        function loadClientRentals(klientId, imie, nazwisko) {
+            const container = document.getElementById('ClientRentalDetails');
+            container.innerHTML = '<div class="text-center text-primary"><i class="fa-solid fa-spinner fa-spin me-2"></i> Ładowanie danych...</div>';
+
+            fetch(`/api/KlienciApi/rentals/${klientId}`)
+                .then(response => {
+                    if (!response.ok) throw new Error('Błąd ładowania danych wynajmu.');
+                    return response.json();
+                })
+                .then(rentals => {
+                    let html = `
+                        <h6 class="fw-bold mb-3">Klient: ${imie} ${nazwisko}</h6>
+                    `;
+
+                    if (rentals.length > 0) {
+                        html += `<p class="small text-muted mb-3">Posiada aktualnie <strong>${rentals.length}</strong> aktywne(y) wypożyczenie(a):</p>`;
+                        html += '<div class="list-group">';
+
+                        rentals.forEach(rental => {
+                            const dataWynajmu = new Date(rental.dataWynajmu).toLocaleDateString();
+                            const dataZwrotu = new Date(rental.dataZwrotuPlanowana).toLocaleDateString();
+
+                            const isLate = new Date(rental.dataZwrotuPlanowana) < new Date();
+                            const lateClass = isLate ? 'text-danger' : 'text-success';
+
+
+                            html += `
+                                <div class="list-group-item list-group-item-action mb-2 rounded-3 border-secondary border-opacity-25">
+                                    <h5 class="mb-1 fw-bold text-primary">${rental.markaModel}</h5>
+
+                                    <!-- NOWE DANE: ID i VIN/Rejestracja -->
+                                    <p class="mb-1 small">
+                                        <i class="fa-solid fa-hashtag me-1"></i> ID Pojazdu: <span class="fw-bold">#${rental.pojazdId || 'N/A'}</span>
+                                    </p>
+                                    <p class="mb-1 small">
+                                        <i class="fa-solid fa-car me-1"></i> Rejestracja: <span class="fw-bold">${rental.numerRejestracyjny || 'Brak'}</span>
+                                    </p>
+                                    <!-- KONIEC NOWYCH DANYCH -->
+
+                                    <p class="mb-1 small">
+                                        <i class="fa-solid fa-calendar-days me-1"></i> Data Wynajmu: ${dataWynajmu}
+                                    </p>
+                                    <p class="mb-0 small ${lateClass} fw-bold">
+                                        <i class="fa-solid fa-clock me-1"></i> Planowany Zwrot: ${dataZwrotu}
+                                        ${isLate ? '<span class="badge bg-danger ms-1">OPÓŹNIONY</span>' : ''}
+                                    </p>
+                                </div>
+                            `;
+                        });
+                        html += '</div>';
+                    } else {
+                        html += `
+                            <div class="alert alert-success shadow-sm" role="alert">
+                                <i class="fa-solid fa-check-circle me-2"></i> Klient nie ma aktualnie wynajętego pojazdu.
+                            </div>
+                        `;
+                    }
+                    container.innerHTML = html;
+                })
+                .catch(error => {
+                    container.innerHTML = `<div class="alert alert-danger">Błąd ładowania danych. Upewnij się, że API jest aktywne.</div>`;
+                });
+        }
+    </script>
+}

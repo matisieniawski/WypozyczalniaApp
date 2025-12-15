@@ -1,0 +1,44 @@
+﻿@page
+@model WypozyczalniaApp.Pages.Modele.CreateModel
+
+@{
+    ViewData["Title"] = "Dodaj Model";
+}
+
+<h1>Dodaj Nowy Model</h1>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="form-group mb-3">
+                <label asp-for="ModelPojazdu.ProducentId" class="control-label">Producent</label>
+                <select asp-for="ModelPojazdu.ProducentId" class="form-control" asp-items="ViewBag.ProducentId"></select>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="ModelPojazdu.NazwaModelu" class="control-label">Nazwa Modelu</label>
+                <input asp-for="ModelPojazdu.NazwaModelu" class="form-control" />
+                <span asp-validation-for="ModelPojazdu.NazwaModelu" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="ModelPojazdu.CenaZaDobe" class="control-label">Cena za Dobę (PLN)</label>
+                <input asp-for="ModelPojazdu.CenaZaDobe" class="form-control" type="number" step="0.01" />
+                <span asp-validation-for="ModelPojazdu.CenaZaDobe" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <input type="submit" value="Utwórz" class="btn btn-success" />
+                <a asp-page="Index" class="btn btn-secondary">Anuluj</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

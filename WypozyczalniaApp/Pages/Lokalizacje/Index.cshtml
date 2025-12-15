@@ -1,0 +1,42 @@
+﻿@page
+@model WypozyczalniaApp.Pages.Lokalizacje.IndexModel
+
+@{
+    ViewData["Title"] = "Lokalizacje";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 text-gray-800"><i class="fa-solid fa-map-location-dot me-2"></i>Oddziały</h1>
+    <a asp-page="Create" class="btn btn-primary shadow-sm">
+        <i class="fa-solid fa-plus me-1"></i> Dodaj Lokalizację
+    </a>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="bg-light">
+                <tr>
+                    <th>Nazwa Oddziału</th>
+                    <th>Adres</th>
+                    <th class="text-end">Opcje</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Lokalizacje)
+                {
+                    <tr>
+                        <td class="fw-bold">@item.Nazwa</td>
+                        <td><i class="fa-solid fa-location-dot me-2 text-danger"></i>@item.Adres</td>
+                        <td class="text-end">
+                            <div class="btn-group" role="group">
+                                <a asp-page="./Edit" asp-route-id="@item.LokalizacjaId" class="btn btn-sm btn-outline-primary"><i class="fa-solid fa-pen"></i></a>
+                                <a asp-page="./Delete" asp-route-id="@item.LokalizacjaId" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

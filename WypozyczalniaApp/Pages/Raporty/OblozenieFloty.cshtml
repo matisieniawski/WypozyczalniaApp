@@ -1,0 +1,148 @@
+﻿@page
+@model WypozyczalniaApp.Pages.Raporty.OblozenieFlotyModel
+@using Microsoft.AspNetCore.Html;
+@using System.Globalization;
+
+@{
+    ViewData["Title"] = "Obłożenie Floty";
+    var totalPeriodDays = (int)((Model.EndDate.GetValueOrDefault(DateTime.Today.AddDays(1)) - Model.StartDate.GetValueOrDefault(DateTime.Today)).TotalDays);
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 text-gray-800"><i class="fa-solid fa-calendar-check me-2"></i>Obłożenie Floty w Okresie</h1>
+    <a asp-page="./Przychody" class="btn btn-outline-secondary shadow-sm">
+        <i class="fa-solid fa-chart-line me-1"></i> Zobacz Przychody
+    </a>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label for="StartDate" class="form-label small text-muted">Data Początkowa</label>
+                <input type="date" id="StartDate" name="StartDate" value="@Model.StartDate?.ToString("yyyy-MM-dd")" class="form-control" required />
+            </div>
+            <div class="col-md-4">
+                <label for="EndDate" class="form-label small text-muted">Data Końcowa</label>
+                <input type="date" id="EndDate" name="EndDate" value="@Model.EndDate?.ToString("yyyy-MM-dd")" class="form-control" required />
+            </div>
+            <div class="col-md-4 d-flex justify-content-end">
+                <button type="submit" class="btn btn-primary me-2"><i class="fa-solid fa-chart-bar me-1"></i> Generuj Raport</button>
+                <a asp-page="./OblozenieFloty" class="btn btn-outline-secondary"><i class="fa-solid fa-xmark me-1"></i> Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-xl-7 col-lg-7">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 bg-white border-bottom-0">
+                <h6 class="m-0 font-weight-bold text-primary">Procentowe Obłożenie Floty</h6>
+            </div>
+            <div class="card-body">
+                <div class="chart-area" style="position: relative; height:350px;">
+                    <canvas id="utilizationChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-5 col-lg-5">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 bg-white border-bottom-0">
+                <h6 class="m-0 font-weight-bold text-primary">Podsumowanie Okresu</h6>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item d-flex justify-content-between fw-bold">
+                        <span><i class="fa-solid fa-calendar me-2"></i>Długość Okresu:</span>
+                        <span>@totalPeriodDays Dni</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between">
+                        <span><i class="fa-solid fa-car-side me-2 text-primary"></i>Łączna Liczba Pojazdów:</span>
+                        <span>@Model.TotalPojazdow</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between">
+                        <span><i class="fa-solid fa-road me-2 text-success"></i>Dni Wynajmu (Aktywne):</span>
+                        <span>@Model.UtilizationData.FirstOrDefault(d => d.Status == "Wynajęte Dni")?.TotalDays Dni</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between">
+                        <span><i class="fa-solid fa-wrench me-2 text-danger"></i>Dni Serwisu:</span>
+                        <span>@Model.UtilizationData.FirstOrDefault(d => d.Status == "Dni Serwisu")?.TotalDays Dni</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between bg-light fw-bold">
+                        <span><i class="fa-solid fa-percent me-2 text-info"></i>Obłożenie (Dni Wynajmu/Całkowity Czas):</span>
+                        @{
+                            var wynajeteDni = Model.UtilizationData.FirstOrDefault(d => d.Status == "Wynajęte Dni")?.TotalDays ?? 0;
+                            var totalDniFloty = Model.TotalPojazdow * totalPeriodDays;
+                            var oblozeniePercent = totalDniFloty > 0 ? (double)wynajeteDni / totalDniFloty * 100 : 0;
+                        }
+                        <span class="fs-5 text-info">@oblozeniePercent.ToString("N1")%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+
+            const dataSet = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.UtilizationData));
+            const totalVehicles = @Model.TotalPojazdow;
+            const totalPeriodDays = @totalPeriodDays;
+
+
+            const totalCapacityDays = totalVehicles * totalPeriodDays;
+
+            const wynajeteDays = dataSet.find(d => d.Status === 'Wynajęte Dni')?.TotalDays || 0;
+            const serwisDays = dataSet.find(d => d.Status === 'Dni Serwisu')?.TotalDays || 0;
+
+            const availableDays = Math.max(0, totalCapacityDays - wynajeteDays - serwisDays);
+
+
+            if (totalCapacityDays > 0 && (wynajeteDays > 0 || serwisDays > 0)) {
+
+                const ctx = document.getElementById('utilizationChart').getContext('2d');
+
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Dostępne Dni (Potencjał)', 'Wynajęte Dni', 'Dni Serwisu'],
+                        datasets: [{
+                            data: [availableDays, wynajeteDays, serwisDays],
+                            backgroundColor: ['#1cc88a', '#ffc107', '#dc3545'],
+                            hoverBackgroundColor: ['#17a673', '#d4a105', '#b02a37'],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom' },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.label || '';
+                                        if (label) { label += ': '; }
+                                        if (context.parsed > 0) {
+                                            const percentage = (context.parsed / totalCapacityDays * 100).toFixed(1) + '%';
+                                            label += context.parsed.toLocaleString() + ' dni (' + percentage + ')';
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } else {
+                 $('#utilizationChart').replaceWith('<div class="text-center p-5 text-muted">Brak danych historycznych w wybranym okresie.</div>');
+            }
+        });
+    </script>
+}

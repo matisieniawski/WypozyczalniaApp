@@ -1,0 +1,64 @@
+﻿@page
+@model WypozyczalniaApp.Pages.Pojazdy.EditModel
+
+@{
+    ViewData["Title"] = "Edytuj Pojazd";
+}
+
+<h1>Edytuj Pojazd</h1>
+<hr />
+<div class="row">
+    <div class="col-md-5">
+        <form method="post">
+            <div asp-validation-summary="All" class="text-danger mb-3 border p-3 bg-light"></div>
+
+            <input type="hidden" asp-for="Pojazd.PojazdId" />
+
+            <div class="form-group mb-3">
+                <label asp-for="Pojazd.ModelId" class="control-label">Model</label>
+                <select asp-for="Pojazd.ModelId" class="form-control" asp-items="ViewBag.ModelId"></select>
+                <span asp-validation-for="Pojazd.ModelId" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Pojazd.NumerVin" class="control-label">Numer VIN</label>
+                <input asp-for="Pojazd.NumerVin" class="form-control" />
+                <span asp-validation-for="Pojazd.NumerVin" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Pojazd.NumerRejestracyjny" class="control-label">Numer Rejestracyjny</label>
+                <input asp-for="Pojazd.NumerRejestracyjny" class="form-control" />
+                <span asp-validation-for="Pojazd.NumerRejestracyjny" class="text-danger"></span>
+            </div>
+
+
+            <div class="form-group mb-3">
+                <label asp-for="Pojazd.DataDodania" class="control-label">Data Dodania</label>
+                <input asp-for="Pojazd.DataDodania" class="form-control" type="date" />
+                <span asp-validation-for="Pojazd.DataDodania" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Pojazd.Status" class="control-label">Status</label>
+                <select asp-for="Pojazd.Status" class="form-control">
+                    <option value="Dostepny">Dostepny</option>
+                    <option value="Serwis">Serwis</option>
+                    <option value="Wynajety">Wynajety</option>
+                </select>
+                <span asp-validation-for="Pojazd.Status" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <input type="submit" value="Zapisz" class="btn btn-primary" />
+                <a asp-page="./Index" class="btn btn-secondary">Wróć</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

@@ -1,0 +1,217 @@
+﻿@page
+@model WypozyczalniaApp.Pages.Wynajmy.IndexModel
+@using Microsoft.AspNetCore.Html;
+
+@{
+    ViewData["Title"] = "Zarządzanie Wynajmami";
+    var isActiveView = Model.ViewType != "History";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 text-gray-800"><i class="fa-solid fa-key me-2"></i>Zarządzanie Wynajmami</h1>
+    <a asp-page="Create" class="btn btn-primary shadow-sm">
+        <i class="fa-solid fa-file-circle-plus me-1"></i> Nowy Wynajem
+    </a>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fa-solid fa-check-circle me-2"></i> @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fa-solid fa-triangle-exclamation me-2"></i> @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<ul class="nav nav-tabs mb-4">
+    <li class="nav-item">
+        <a class="nav-link @(isActiveView ? "active fw-bold border-bottom-0" : "text-muted")"
+           asp-page="./Index" asp-route-ViewType="Active">
+            <i class="fa-solid fa-road me-2 text-success"></i>W Trakcie (Aktywne)
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(!isActiveView ? "active fw-bold border-bottom-0" : "text-muted")"
+           asp-page="./Index" asp-route-ViewType="History">
+            <i class="fa-solid fa-clock-rotate-left me-2 text-secondary"></i>Historia Zwrotów
+        </a>
+    </li>
+</ul>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+
+            <input type="hidden" name="ViewType" value="@Model.ViewType" />
+
+            <div class="col-md-1">
+                <label for="IdSearch" class="form-label small text-muted">ID</label>
+                <input type="number" id="IdSearch" name="IdSearch" value="@Model.IdSearch" class="form-control" placeholder="ID" />
+            </div>
+
+            <div class="col-md-2">
+                <label for="VINSearch" class="form-label small text-muted">VIN/Pojazd</label>
+                <input type="text" id="VINSearch" name="VINSearch" value="@Model.VINSearch" class="form-control" placeholder="VIN lub Model..." />
+            </div>
+
+            <div class="col-md-3">
+                <label for="KlientSearch" class="form-label small text-muted">Klient (Imię/Nazwisko)</label>
+                <input type="text" id="KlientSearch" name="KlientSearch" value="@Model.KlientSearch" class="form-control" placeholder="Nazwisko..." />
+            </div>
+
+            <div class="col-md-3">
+                <label for="DateFromSearch" class="form-label small text-muted">Wypożyczone Od Daty</label>
+                <input type="date" id="DateFromSearch" name="DateFromSearch" value="@(Model.DateFromSearch?.ToString("yyyy-MM-dd"))" class="form-control" />
+            </div>
+
+            <div class="col-md-3 d-flex justify-content-end">
+                <button type="submit" class="btn btn-primary me-2"><i class="fa-solid fa-filter me-1"></i> Filtruj</button>
+                <a asp-page="./Index" asp-route-ViewType="@Model.ViewType" class="btn btn-outline-secondary"><i class="fa-solid fa-xmark me-1"></i> Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow mb-4 border-top-0">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="@(isActiveView ? "table-success" : "table-secondary")">
+                    <tr>
+                        @{
+         
+                            string GetSortArrow(string column)
+                            {
+                                if (Model.SortColumn != column) return "";
+                                return Model.SortDirection == "Asc" ? "fa-arrow-up" : "fa-arrow-down";
+                            }
+                            string GetNextSortDirection(string currentColumn)
+                            {
+                                if (Model.SortColumn != currentColumn) return "Asc";
+                                return Model.SortDirection == "Asc" ? "Desc" : "Asc";
+                            }
+
+                            IHtmlContent CreateSortLink(string columnName, string display, string defaultDir = "Asc")
+                            {
+                                var nextDir = GetNextSortDirection(columnName);
+
+                                var url = Url.Page("./Index", new
+                                {
+                                    SortColumn = columnName,
+                                    SortDirection = nextDir,
+                                    ViewType = Model.ViewType,
+                                    IdSearch = Model.IdSearch,
+                                    VINSearch = Model.VINSearch,
+                                    KlientSearch = Model.KlientSearch,
+                                    DateFromSearch = Model.DateFromSearch?.ToString("yyyy-MM-dd")
+                                });
+
+                                return new HtmlString($@"
+                                                <a href='{url}' class='text-decoration-none text-dark fw-bold'>
+                                                {display} <i class='fa-solid {GetSortArrow(columnName)} ms-1'></i>
+                                                </a>");
+                            }
+                        }
+                        <th>@CreateSortLink("Id", "ID")</th>
+                        <th>@CreateSortLink("Pojazd", "Pojazd")</th>
+                        <th>@CreateSortLink("Klient", "Klient")</th>
+                        <th>@CreateSortLink("Wypozyczenie", "Data Wypożyczenia")</th>
+                        <th>@CreateSortLink("PlanowanyZwrot", "Planowany Zwrot")</th>
+                        @if (!isActiveView)
+                        {
+                            <th>Rzeczywisty Zwrot</th>
+                        }
+                        <th class="text-end">Akcje / Koszt</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Wynajmy.Any())
+                    {
+                        <tr>
+                            <td colspan="@(isActiveView ? 6 : 7)" class="text-center py-5 text-muted">
+                                <i class="fa-solid fa-folder-open fa-3x mb-3 opacity-50"></i><br>
+                                Brak wynajmów w tej kategorii spełniających kryteria filtrowania.
+                            </td>
+                        </tr>
+                    }
+
+                    @foreach (var item in Model.Wynajmy)
+                    {
+                        <tr>
+                            <td><span class="small text-muted">#@item.WynajemId</span></td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-light rounded p-2 me-2 text-secondary">
+                                        <i class="fa-solid fa-car"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">@item.Pojazd.Model.NazwaModelu</div>
+                                        <div class="small text-muted">@item.Pojazd.NumerVin</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="fw-bold">@item.Klient.Nazwisko @item.Klient.Imie</div>
+                                <div class="small text-muted">@item.Klient.Email</div>
+                            </td>
+                            <td>@item.DataWypozyczenia.ToShortDateString()</td>
+
+                            @{
+                                var isLate = isActiveView && item.DataZwrotuPlanowana < DateTime.UtcNow;
+                                var dateClass = isLate ? "text-danger fw-bold" : "";
+                            }
+                            <td class="@dateClass">
+                                @item.DataZwrotuPlanowana.ToShortDateString()
+                                @if (isLate)
+                                {
+                                    <span class="badge bg-danger ms-1">Opóźniony</span>
+                                }
+                            </td>
+
+                            @if (!isActiveView)
+                            {
+                                <td>@item.DataZwrotuRzeczywista?.ToShortDateString()</td>
+                            }
+
+                            <td class="text-end">
+                                @if (isActiveView)
+                                {
+                                    <form method="post" asp-page-handler="Finish" asp-route-id="@item.WynajemId" class="d-inline"
+                                          onsubmit="return confirm('Czy na pewno chcesz zakończyć ten wynajem? Zostanie wystawiona faktura.');">
+
+                                        <input type="hidden" name="ViewType" value="@Model.ViewType" />
+                                        <input type="hidden" name="IdSearch" value="@Model.IdSearch" />
+                                        <input type="hidden" name="VINSearch" value="@Model.VINSearch" />
+                                        <input type="hidden" name="KlientSearch" value="@Model.KlientSearch" />
+                                        <input type="hidden" name="DateFromSearch" value="@(Model.DateFromSearch?.ToString("yyyy-MM-dd"))" />
+                                        <input type="hidden" name="SortColumn" value="@Model.SortColumn" />
+                                        <input type="hidden" name="SortDirection" value="@Model.SortDirection" />
+
+                                        <button type="submit" class="btn btn-sm btn-outline-success shadow-sm">
+                                            <i class="fa-solid fa-flag-checkered me-1"></i> Zakończ
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <div class="d-flex flex-column align-items-end">
+                                        <span class="fw-bold text-success fs-5">
+                                            @item.KosztCalkowity.GetValueOrDefault().ToString("C")
+                                        </span>
+                                        <span class="badge bg-light text-dark border"><i class="fa-solid fa-file-invoice me-1"></i>Faktura OK</span>
+                                    </div>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

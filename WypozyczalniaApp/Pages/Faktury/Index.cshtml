@@ -1,0 +1,287 @@
+﻿@page
+@model WypozyczalniaApp.Pages.Faktury.IndexModel
+@using Microsoft.AspNetCore.Html;
+@using Microsoft.AspNetCore.Mvc.Rendering;
+@using System.Globalization;
+@using System.Text.Json;
+
+@{
+    ViewData["Title"] = "Rejestr Faktur";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 text-gray-800"><i class="fa-solid fa-file-invoice-dollar me-2"></i>Rejestr Faktur</h1>
+
+    <form method="post" asp-page-handler="ExportCsv">
+        <button type="submit" class="btn btn-sm btn-success shadow-sm">
+            <i class="fa-solid fa-file-csv me-1"></i> Pobierz listę (CSV)
+        </button>
+    </form>
+</div>
+
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+
+            <div class="col-md-3">
+                <label for="StatusFilter" class="form-label small text-muted">Status Płatności</label>
+                <select id="StatusFilter" name="StatusFilter" class="form-select" asp-items="Model.AvailableStatuses">
+                    <option value="">Wszystkie Statusy</option>
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label for="ClientSearch" class="form-label small text-muted">Szukaj Klienta (Imię/Nazwisko)</label>
+                <input type="text" id="ClientSearch" name="ClientSearch" value="@Model.ClientSearch" class="form-control" placeholder="Wpisz nazwisko..." />
+            </div>
+
+            <div class="col-md-4">
+                <label for="DateRange" class="form-label small text-muted">Filtruj Zakres Dat</label>
+                <input type="text" id="DateRange" name="DateRange" value="@Model.DateRange" class="form-control" placeholder="2023-01-01 / 2023-12-31" />
+            </div>
+
+            <div class="col-md-2 d-flex justify-content-end">
+                <button type="submit" class="btn btn-primary me-2"><i class="fa-solid fa-filter me-1"></i> Filtruj</button>
+                <a asp-page="./Index" class="btn btn-outline-secondary"><i class="fa-solid fa-xmark me-1"></i> Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+<div class="row">
+   
+    <div class="col-lg-9">
+
+       
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+                <i class="fa-solid fa-check-circle me-2"></i> @TempData["SuccessMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+                <i class="fa-solid fa-triangle-exclamation me-2"></i> @TempData["ErrorMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        <div class="card shadow mb-4">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                @{
+                                    string GetSortArrow(string column)
+                                    {
+                                        if (Model.SortColumn != column) return "";
+                                        return Model.SortDirection == "Asc" ? "fa-arrow-up" : "fa-arrow-down";
+                                    }
+                                    string GetNextSortDirection(string currentColumn)
+                                    {
+                                        if (Model.SortColumn != currentColumn) return "Asc";
+                                        return Model.SortDirection == "Asc" ? "Desc" : "Asc";
+                                    }
+
+                                    IHtmlContent CreateSortLink(string columnName, string display, string defaultDir = "Desc")
+                                    {
+                                        var nextDir = GetNextSortDirection(columnName);
+
+                                        var url = Url.Page("./Index", new
+                                        {
+                                            SortColumn = columnName,
+                                            SortDirection = nextDir,
+                                            StatusFilter = Model.StatusFilter,
+                                            ClientSearch = Model.ClientSearch,
+                                            DateRange = Model.DateRange
+                                        });
+
+                                        return new HtmlString($@"
+                                                                <a href='{url}' class='text-decoration-none text-dark fw-bold'>
+                                                                {display} <i class='fa-solid {GetSortArrow(columnName)} ms-1'></i>
+                                                                </a>");
+                                    }
+
+                                    string GetStatusBadgeClass(string status) => status switch
+                                    {
+                                        "Oplacona" => "bg-success",
+                                        "Nieoplacona" => "bg-danger",
+                                        "Anulowana" => "bg-secondary",
+                                        _ => "bg-info"
+                                    };
+                                }
+                                <th class="ps-3">ID</th> 
+                                <th>@CreateSortLink("DataWystawienia", "Wystawienie", "Desc")</th>
+                                <th>@CreateSortLink("Klient", "Klient")</th>
+                                <th>@CreateSortLink("Pojazd", "Pojazd")</th> 
+                                <th>@CreateSortLink("Kwota", "Kwota Brutto")</th>
+                                <th class="text-center">@CreateSortLink("Status", "Status")</th> 
+                                <th class="text-end">Akcje</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.Faktury)
+                            {
+                                <tr>
+                                    <td class="ps-3 small text-muted">#@item.FakturaId</td> 
+                                    <td>
+                                        <i class="fa-regular fa-calendar-days me-1 text-muted"></i>
+                                        @item.DataWystawienia.ToShortDateString()
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold">@item.Wynajem.Klient.Nazwisko @item.Wynajem.Klient.Imie</div>
+                                        <small class="text-muted">@item.Wynajem.Klient.Email</small>
+                                    </td>
+                                    <td>
+                                        @item.Wynajem.Pojazd.Model.Producent.Nazwa @item.Wynajem.Pojazd.Model.NazwaModelu
+                                        <div class="small text-muted">VIN: @item.Wynajem.Pojazd.NumerVin</div>
+                                    </td>
+                                    <td class="text-success fw-bold">
+                                        @item.KwotaBrutto.ToString("C", new CultureInfo("pl-PL"))
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge @GetStatusBadgeClass(item.StatusPlatnosci)">@item.StatusPlatnosci</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-info"
+                                                title="Pokaż szczegóły"
+                                                onclick="loadFakturaDetails('@item.FakturaId')">
+                                            <i class="fa-solid fa-circle-info"></i> Szczegóły
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+   
+    <div class="col-lg-3">
+        <div class="card shadow-sm border-info border-start-0 border-end-0 border-top-0 border-bottom-4 sticky-top" style="top: 15px;">
+            <div class="card-body">
+                <div id="FakturaDetailsContainer">
+                    <p class="text-center text-muted mt-3">Wybierz fakturę z listy, klikając "Szczegóły".</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+   
+    <div class="modal fade" id="confirmPaymentModal" tabindex="-1" aria-labelledby="confirmPaymentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="confirmPaymentModalLabel">Potwierdzenie Płatności</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <i class="fa-solid fa-file-invoice-dollar fa-3x text-success mb-3"></i>
+                    <p>Czy na pewno chcesz oznaczyć fakturę <strong id="modalFakturaId"></strong> jako **OPŁACONĄ**?</p>
+                </div>
+                <div class="modal-footer d-block">
+                    <form method="post" id="markPaidForm" asp-page-handler="MarkPaid">
+                        <input type="hidden" name="fakturaId" id="fakturaIdInput" value="" />
+                        <button type="submit" class="btn btn-success w-100">Tak, opłać i zaksięguj</button>
+                    </form>
+                    <button type="button" class="btn btn-secondary w-100 mt-2" data-bs-dismiss="modal">Anuluj</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        
+        const allFakturyData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Faktury.ToDictionary(f => f.FakturaId)));
+
+       
+        function loadFakturaDetails(fakturaId) {
+            const container = document.getElementById('FakturaDetailsContainer');
+            container.innerHTML = '<div class="text-center text-primary"><i class="fa-solid fa-spinner fa-spin me-2"></i> Ładowanie...</div>';
+
+            const faktura = allFakturyData[fakturaId];
+
+            if (!faktura) {
+                container.innerHTML = '<div class="alert alert-danger">Nie znaleziono danych faktury.</div>';
+                return;
+            }
+
+            const dataWystawienia = new Date(faktura.DataWystawienia).toLocaleDateString('pl-PL');
+            const dataWynajmu = new Date(faktura.Wynajem.DataWypozyczenia).toLocaleDateString('pl-PL');
+            const dataZwrotu = faktura.Wynajem.DataZwrotuRzeczywista ? new Date(faktura.Wynajem.DataZwrotuRzeczywista).toLocaleDateString('pl-PL') : 'Nie zwrócono';
+            const kwotaBrutto = faktura.KwotaBrutto.toFixed(2).replace('.', ',') + ' zł'; 
+
+            const statusClass = faktura.StatusPlatnosci === 'Oplacona' ? 'bg-success' : 'bg-danger';
+            const statusTekst = faktura.StatusPlatnosci;
+            const markaModel = faktura.Wynajem.Pojazd.Model.Producent.Nazwa + ' ' + faktura.Wynajem.Pojazd.Model.NazwaModelu;
+            const rejestracja = faktura.Wynajem.Pojazd.NumerRejestracyjny || 'Brak';
+            const vin = faktura.Wynajem.Pojazd.NumerVin; 
+
+            const isPaid = faktura.StatusPlatnosci === 'Oplacona';
+
+            let actionButton = '';
+            if (!isPaid) {
+                
+                actionButton = `
+                    <button type="button" class="btn btn-sm btn-success shadow-sm w-100 mt-4"
+                            data-bs-toggle="modal" data-bs-target="#confirmPaymentModal"
+                            onclick="preparePaymentModal('${faktura.FakturaId}')">
+                        <i class="fa-solid fa-check-double me-1"></i> Oznacz jako Opłacona
+                    </button>
+                `;
+            } else {
+                 actionButton = `<div class="alert alert-success text-center mt-4 p-2 small">Płatność ZAKSIĘGOWANA</div>`;
+            }
+
+
+            let html = `
+                <h6 class="fw-bold text-primary mb-3">Faktura #${faktura.FakturaId}</h6>
+
+                <p class="mb-2"><i class="fa-solid fa-circle me-2 ${statusClass} rounded-circle small"></i> <strong>Status:</strong> <span class="fw-bold">${statusTekst}</span></p>
+                <p class="mb-2"><i class="fa-solid fa-calendar-days me-2"></i> <strong>Wystawienie:</strong> ${dataWystawienia}</p>
+                <hr/>
+
+                <h6 class="fw-bold text-dark mb-2">Szczegóły Rozliczenia:</h6>
+                <p class="mb-2"><i class="fa-solid fa-calculator me-2"></i> <strong>Kwota Brutto:</strong> <span class="fw-bold text-success">${kwotaBrutto}</span></p>
+                <p class="mb-2"><i class="fa-solid fa-money-check-dollar me-2"></i> <strong>Miesiąc Księgowy:</strong> ${new Date(faktura.DataWystawienia).getFullYear()}-${new Date(faktura.DataWystawienia).getMonth() + 1}</p>
+                <hr/>
+
+                <h6 class="fw-bold text-dark mb-2">Dane Wynajmu:</h6>
+                <p class="mb-1"><i class="fa-solid fa-user me-2"></i> <strong>Klient:</strong> ${faktura.Wynajem.Klient.Imie} ${faktura.Wynajem.Klient.Nazwisko}</p>
+                <p class="mb-1"><i class="fa-solid fa-car me-2"></i> <strong>Pojazd:</strong> ${markaModel}</p>
+                <p class="mb-1"><i class="fa-solid fa-barcode me-2"></i> <strong>Rejestracja:</strong> ${rejestracja}</p>
+                <p class="mb-1"><i class="fa-solid fa-fingerprint me-2"></i> <strong>VIN:</strong> ${vin}</p> <!-- NOWE POLE VIN -->
+                <hr/>
+
+                <h6 class="fw-bold text-dark mb-2">Okres:</h6>
+                <p class="mb-1"><i class="fa-solid fa-arrow-right me-2"></i> <strong>Odbiór:</strong> ${dataWynajmu}</p>
+                <p class="mb-1"><i class="fa-solid fa-arrow-left me-2"></i> <strong>Zwrot:</strong> ${dataZwrotu}</p>
+
+                ${actionButton}
+            `;
+
+            container.innerHTML = html;
+        }
+
+        
+        function preparePaymentModal(fakturaId) {
+            document.getElementById('modalFakturaId').textContent = '#' + fakturaId;
+            document.getElementById('fakturaIdInput').value = fakturaId;
+            
+        }
+    </script>
+}

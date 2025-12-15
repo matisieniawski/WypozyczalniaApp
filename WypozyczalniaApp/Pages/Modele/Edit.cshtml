@@ -1,0 +1,46 @@
+﻿@page
+@model WypozyczalniaApp.Pages.Modele.EditModel
+
+@{
+    ViewData["Title"] = "Edytuj Model";
+}
+
+<h1>Edytuj Model</h1>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="ModelPojazdu.ModelId" />
+
+            <div class="form-group mb-3">
+                <label asp-for="ModelPojazdu.ProducentId" class="control-label">Producent</label>
+                <select asp-for="ModelPojazdu.ProducentId" class="form-control" asp-items="ViewBag.ProducentId"></select>
+                <span asp-validation-for="ModelPojazdu.ProducentId" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="ModelPojazdu.NazwaModelu" class="control-label">Nazwa Modelu</label>
+                <input asp-for="ModelPojazdu.NazwaModelu" class="form-control" />
+                <span asp-validation-for="ModelPojazdu.NazwaModelu" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="ModelPojazdu.CenaZaDobe" class="control-label">Cena (PLN)</label>
+                <input asp-for="ModelPojazdu.CenaZaDobe" class="form-control" type="number" step="0.01" />
+                <span asp-validation-for="ModelPojazdu.CenaZaDobe" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <input type="submit" value="Zapisz" class="btn btn-primary" />
+                <a asp-page="./Index" class="btn btn-secondary">Wróć</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

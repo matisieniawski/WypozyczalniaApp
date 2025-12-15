@@ -1,0 +1,27 @@
+﻿@page
+@model WypozyczalniaApp.Pages.Klienci.DeleteModel
+
+@{
+    ViewData["Title"] = "Usuń Klienta";
+}
+
+<h1 class="text-danger">Usuń Klienta</h1>
+<h3>Czy na pewno chcesz usunąć tego klienta z bazy?</h3>
+<div class="card shadow-sm p-3 mb-4 border-danger">
+    <dl class="row">
+        <dt class="col-sm-2">Imię</dt>
+        <dd class="col-sm-10">@Html.DisplayFor(model => model.Klient.Imie)</dd>
+
+        <dt class="col-sm-2">Nazwisko</dt>
+        <dd class="col-sm-10">@Html.DisplayFor(model => model.Klient.Nazwisko)</dd>
+
+        <dt class="col-sm-2">Email</dt>
+        <dd class="col-sm-10">@Html.DisplayFor(model => model.Klient.Email)</dd>
+    </dl>
+
+    <form method="post">
+        <input type="hidden" asp-for="Klient.KlientId" />
+        <input type="submit" value="Usuń trwale" class="btn btn-danger" />
+        <a asp-page="./Index" class="btn btn-secondary">Anuluj</a>
+    </form>
+</div>

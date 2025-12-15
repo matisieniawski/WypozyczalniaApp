@@ -1,0 +1,184 @@
+﻿@page
+@model WypozyczalniaApp.Pages.Serwis.IndexModel
+@using Microsoft.AspNetCore.Html;
+@using Microsoft.AspNetCore.Mvc.Rendering;
+
+@{
+    ViewData["Title"] = "Centrum Serwisowe";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 text-gray-800"><i class="fa-solid fa-screwdriver-wrench me-2 text-danger"></i>Centrum Serwisowe</h1>
+    <span class="badge bg-danger text-white p-2 shadow-sm"><i class="fa-solid fa-user-lock me-1"></i>STREFA ADMINISTRATORA</span>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+        <i class="fa-solid fa-check-circle me-2"></i> @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+        <i class="fa-solid fa-triangle-exclamation me-2"></i> @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+
+            <div class="col-md-2">
+                <label for="IdSearch" class="form-label small text-muted">ID Pojazdu</label>
+                <input type="number" id="IdSearch" name="IdSearch" value="@Model.IdSearch" class="form-control" placeholder="ID" />
+            </div>
+
+            <div class="col-md-2">
+                <label for="VINSearch" class="form-label small text-muted">VIN/Rejestracja</label>
+                <input type="text" id="VINSearch" name="VINSearch" value="@Model.VINSearch" class="form-control" placeholder="VIN..." />
+            </div>
+
+            <div class="col-md-3">
+                <label for="NameSearch" class="form-label small text-muted">Nazwa (Model/Producent)</label>
+                <input type="text" id="NameSearch" name="NameSearch" value="@Model.NameSearch" class="form-control" placeholder="Toyota, Yaris..." />
+            </div>
+
+            <div class="col-md-2">
+                <label for="StatusFilter" class="form-label small text-muted">Filtruj Status</label>
+                <select id="StatusFilter" name="StatusFilter" class="form-select">
+                    <option value="">Wszystkie Statusy</option>
+                    <option value="Serwis" selected="@(Model.StatusFilter == "Serwis")">W Serwisie</option>
+                    <option value="Dostepny" selected="@(Model.StatusFilter == "Dostepny")">Dostępne</option>
+                    <option value="Wynajety" selected="@(Model.StatusFilter == "Wynajety")">Wynajęte</option>
+                </select>
+            </div>
+
+            <div class="col-md-3 d-flex justify-content-end">
+                <button type="submit" class="btn btn-primary me-2"><i class="fa-solid fa-filter me-1"></i> Filtruj</button>
+                <a asp-page="./Index" class="btn btn-outline-secondary"><i class="fa-solid fa-xmark me-1"></i> Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0 table-hover">
+                <thead class="bg-light text-dark">
+                    <tr>
+                        @{
+                            string GetSortArrow(string column)
+                            {
+                                if (Model.SortColumn != column) return "";
+                                return Model.SortDirection == "Asc" ? "fa-arrow-up" : "fa-arrow-down";
+                            }
+                            string GetNextSortDirection(string currentColumn)
+                            {
+                                if (Model.SortColumn != currentColumn) return "Asc";
+                                return Model.SortDirection == "Asc" ? "Desc" : "Asc";
+                            }
+
+                            IHtmlContent CreateSortLink(string columnName, string display, string defaultDir = "Asc")
+                            {
+                                var nextDir = GetNextSortDirection(columnName);
+
+                                var url = Url.Page("./Index", new
+                                {
+                                    SortColumn = columnName,
+                                    SortDirection = nextDir,
+                                    IdSearch = Model.IdSearch,
+                                    VINSearch = Model.VINSearch,
+                                    NameSearch = Model.NameSearch,
+                                    StatusFilter = Model.StatusFilter
+                                });
+
+                                return new HtmlString($@"
+                                                <a href='{url}' class='text-decoration-none text-dark fw-bold'>
+                                                {display} <i class='fa-solid {GetSortArrow(columnName)} ms-1'></i>
+                                                </a>");
+                            }
+                        }
+                        <th class="ps-4">@CreateSortLink("Id", "ID")</th>
+                        <th>@CreateSortLink("Model", "Pojazd")</th>
+                        <th>@CreateSortLink("VIN", "Numer VIN")</th>
+                        <th>@CreateSortLink("OstatniSerwis", "Ostatni Serwis")</th> 
+                        <th>@CreateSortLink("Status", "Status")</th>
+                        <th class="text-end">Akcja</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.PojazdyFloty)
+                    {
+                        var rowClass = item.Status == "Serwis" ? "bg-danger bg-opacity-10" : "";
+                        <tr class="@rowClass">
+                            <td class="ps-4 small text-muted">#@item.PojazdId</td>
+                            <td>
+                                <div class="fw-bold">@item.Model.NazwaModelu</div>
+                                <div class="small text-muted">@item.Model.Producent.Nazwa</div>
+                            </td>
+                            <td><span class="badge bg-light text-dark border">@item.NumerVin</span></td>
+                            <td>
+                                @if (item.DataOstatniegoSerwisu.HasValue)
+                                {
+                                    <span class="text-success small">@item.DataOstatniegoSerwisu.Value.ToShortDateString()</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">Brak danych</span>
+                                }
+                            </td>
+                            <td>
+                                @if (item.Status == "Serwis")
+                                {
+                                    <span class="badge bg-danger p-2"><i class="fa-solid fa-wrench me-1"></i> W naprawie</span>
+                                }
+                                else if (item.Status == "Dostepny")
+                                {
+                                    <span class="badge bg-success p-2"><i class="fa-solid fa-check me-1"></i> Dostępny</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-warning text-dark p-2">@item.Status</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <form method="post">
+                                    <input type="hidden" name="id" value="@item.PojazdId" />
+                                    <input type="hidden" name="IdSearch" value="@Model.IdSearch" />
+                                    <input type="hidden" name="VINSearch" value="@Model.VINSearch" />
+                                    <input type="hidden" name="NameSearch" value="@Model.NameSearch" />
+                                    <input type="hidden" name="StatusFilter" value="@Model.StatusFilter" />
+                                    <input type="hidden" name="SortColumn" value="@Model.SortColumn" />
+                                    <input type="hidden" name="SortDirection" value="@Model.SortDirection" />
+
+                                    @if (item.Status == "Dostepny" || item.Status == "Wynajety")
+                                    {
+                                        <button type="submit" asp-page-handler="ChangeStatus" asp-route-newStatus="Serwis" class="btn btn-outline-danger btn-sm">
+                                            <i class="fa-solid fa-arrow-right-to-bracket me-1"></i> Wyślij na Serwis
+                                        </button>
+                                    }
+                                    else if (item.Status == "Serwis")
+                                    {
+                                        <button type="submit" asp-page-handler="ChangeStatus" asp-route-newStatus="Dostepny" class="btn btn-success btn-sm text-white">
+                                            <i class="fa-solid fa-check-double me-1"></i> Zakończ Serwis
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button type="button" class="btn btn-secondary btn-sm" disabled>
+                                            <i class="fa-solid fa-ban"></i> Niedostępna
+                                        </button>
+                                    }
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

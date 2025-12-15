@@ -1,0 +1,40 @@
+﻿@page
+@model WypozyczalniaApp.Pages.Lokalizacje.EditModel
+
+@{
+    ViewData["Title"] = "Edytuj Lokalizację";
+}
+
+<h1>Edytuj Lokalizację</h1>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="Lokalizacja.LokalizacjaId" />
+
+            <div class="form-group mb-3">
+                <label asp-for="Lokalizacja.Nazwa" class="control-label">Nazwa</label>
+                <input asp-for="Lokalizacja.Nazwa" class="form-control" />
+                <span asp-validation-for="Lokalizacja.Nazwa" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Lokalizacja.Adres" class="control-label">Adres</label>
+                <input asp-for="Lokalizacja.Adres" class="form-control" />
+                <span asp-validation-for="Lokalizacja.Adres" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <input type="submit" value="Zapisz" class="btn btn-primary" />
+                <a asp-page="./Index" class="btn btn-secondary">Anuluj</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

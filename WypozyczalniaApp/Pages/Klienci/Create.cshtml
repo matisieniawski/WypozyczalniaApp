@@ -1,0 +1,53 @@
+﻿@page
+@model WypozyczalniaApp.Pages.Klienci.CreateModel
+
+@{
+    ViewData["Title"] = "Dodaj Klienta";
+}
+
+<h1 class="mb-4">Rejestracja Nowego Klienta</h1>
+<hr />
+<div class="row">
+    <div class="col-md-5">
+        <form method="post">
+
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3 border p-3 bg-light"></div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Klient.Imie" class="control-label">Imię *</label>
+                <input asp-for="Klient.Imie" class="form-control" />
+                <span asp-validation-for="Klient.Imie" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Klient.Nazwisko" class="control-label">Nazwisko *</label>
+                <input asp-for="Klient.Nazwisko" class="form-control" />
+                <span asp-validation-for="Klient.Nazwisko" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Klient.Email" class="control-label">Email *</label>
+                <input asp-for="Klient.Email" class="form-control" type="email" />
+                <span asp-validation-for="Klient.Email" class="text-danger"></span>
+            </div>
+
+
+            <div class="form-group mb-3">
+                <label asp-for="Klient.NumerTelefonu" class="control-label">Numer Telefonu</label>
+                <input asp-for="Klient.NumerTelefonu" class="form-control" />
+                <span asp-validation-for="Klient.NumerTelefonu" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <input type="submit" value="Utwórz" class="btn btn-success" />
+                <a asp-page="Index" class="btn btn-secondary">Anuluj</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

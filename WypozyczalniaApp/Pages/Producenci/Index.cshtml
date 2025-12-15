@@ -1,0 +1,126 @@
+﻿@page
+@model WypozyczalniaApp.Pages.Producenci.IndexModel
+@using Microsoft.AspNetCore.Html;
+@using Microsoft.AspNetCore.Mvc.Rendering;
+
+@{
+    ViewData["Title"] = "Producenci";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 text-gray-800"><i class="fa-solid fa-industry me-2"></i>Producenci</h1>
+    <a asp-page="Create" class="btn btn-primary shadow-sm">
+        <i class="fa-solid fa-plus me-1"></i> Dodaj Markę
+    </a>
+</div>
+
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+
+            <div class="col-md-5">
+                <label for="SearchTerm" class="form-label small text-muted">Szukaj Producenta (Nazwa)</label>
+                <input type="text" id="SearchTerm" name="SearchTerm" value="@Model.SearchTerm" class="form-control" placeholder="Wpisz szukaną nazwę..." />
+            </div>
+
+            <div class="col-md-7 d-flex justify-content-end">
+                <button type="submit" class="btn btn-primary me-2"><i class="fa-solid fa-filter me-1"></i> Filtruj</button>
+                <a asp-page="./Index" class="btn btn-outline-secondary"><i class="fa-solid fa-xmark me-1"></i> Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow mb-4">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                @{
+                                    string GetSortArrow(string column)
+                                    {
+                                        if (Model.SortColumn != column) return "";
+                                        return Model.SortDirection == "Asc" ? "fa-arrow-up" : "fa-arrow-down";
+                                    }
+                                    string GetNextSortDirection(string currentColumn)
+                                    {
+                                        if (Model.SortColumn != currentColumn) return "Asc";
+                                        return Model.SortDirection == "Asc" ? "Desc" : "Asc";
+                                    }
+
+                                    IHtmlContent CreateSortLink(string columnName, string display, string defaultDir = "Asc")
+                                    {
+                                        var nextDir = GetNextSortDirection(columnName);
+
+                                        var url = Url.Page("./Index", new
+                                        {
+                                            SortColumn = columnName,
+                                            SortDirection = nextDir,
+                                            SearchTerm = Model.SearchTerm
+                                        });
+
+                                        return new HtmlString($@"
+                                                                <a href='{url}' class='text-decoration-none text-dark fw-bold'>
+                                                                {display} <i class='fa-solid {GetSortArrow(columnName)} ms-1'></i>
+                                                                </a>");
+                                    }
+                                }
+                                <th class="ps-4">@CreateSortLink("Nazwa", "Nazwa Producenta")</th>
+                                <th class="text-center">@CreateSortLink("Auta", "Ilość Aut", "Desc")</th>
+                                <th class="text-end pe-4">Akcje</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.Producenci)
+                            {
+                                <tr>
+                                    <td class="fw-bold text-dark ps-4">
+                                        <i class="fa-solid fa-tag me-2 text-muted"></i> @item.Nazwa
+                                    </td>
+                                    <td class="text-center">
+                                        @{
+                                            var badgeClass = item.LiczbaAut > 0 ? "bg-warning text-dark" : "bg-success";
+                                        }
+                                        <span class="badge rounded-pill @badgeClass">@item.LiczbaAut</span>
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <div class="btn-group" role="group">
+                                            <a asp-page="./Edit" asp-route-id="@item.ProducentId" class="btn btn-sm btn-outline-primary" title="Edytuj">
+                                                <i class="fa-solid fa-pen-to-square"></i>
+                                            </a>
+                                            <a asp-page="./Delete" asp-route-id="@item.ProducentId" class="btn btn-sm btn-outline-danger" title="Usuń">
+                                                <i class="fa-solid fa-trash-can"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+
+        <div class="card shadow-sm border-0 bg-light p-4 mb-4">
+            <h5 class="card-title text-primary"><i class="fa-solid fa-circle-info me-2"></i>Informacje</h5>
+            <p class="card-text small text-muted">
+                Liczba aut jest obliczana poprzez zliczenie wszystkich pojazdów (niezależnie od statusu) powiązanych z modelami danego producenta. Sortowanie po liczbie aut ułatwia identyfikację najczęściej wykorzystywanych marek.
+            </p>
+        </div>
+
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+                <i class="fa-solid fa-triangle-exclamation me-2"></i> @TempData["ErrorMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+    </div>
+</div>

@@ -1,0 +1,267 @@
+﻿@page
+@model WypozyczalniaApp.Pages.MenuModel
+@{
+    ViewData["Title"] = "Pulpit Główny";
+
+    string GetBorderClass(string type) => type switch
+    {
+        "Primary" => "border-primary",
+        "Success" => "border-success",
+        "Warning" => "border-warning",
+        "Danger" => "border-danger",
+        "Info" => "border-info",
+        _ => "border-secondary"
+    };
+}
+
+<div class="d-flex justify-content-between align-items-center mb-5">
+    <h1 class="h3 text-gray-800"><i class="fa-solid fa-gauge-high me-2 text-primary"></i>Dashboard</h1>
+    <span class="text-muted small">Witaj, <strong>@User.Identity?.Name!</strong></span>
+</div>
+
+<div class="row mb-5">
+
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card @GetBorderClass("Primary") border-start-4 shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col me-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Całkowity Przychód
+                        </div>
+                        <div class="h4 mb-0 font-weight-bold text-gray-800">
+                            @Model.TotalPrzychodu.ToString("C", new System.Globalization.CultureInfo("pl-PL"))
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fa-solid fa-dollar-sign fa-2x text-primary opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card @GetBorderClass("Success") border-start-4 shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col me-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Dostępne Pojazdy
+                        </div>
+                        <div class="h4 mb-0 font-weight-bold text-gray-800">@Model.DostepnePojazdy</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fa-solid fa-car-side fa-2x text-success opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card @GetBorderClass("Warning") border-start-4 shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col me-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Aktywne Wynajmy
+                        </div>
+                        <div class="h4 mb-0 font-weight-bold text-gray-800">@Model.WynajetePojazdy</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fa-solid fa-file-contract fa-2x text-warning opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card @GetBorderClass("Info") border-start-4 shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col me-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Aktywna Baza Klientów
+                        </div>
+                        <div class="h4 mb-0 font-weight-bold text-gray-800">@Model.TotalKlientow</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fa-solid fa-user-group fa-2x text-info opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
+<div class="row mb-5">
+
+    <div class="col-md-3 mb-4">
+        <div class="card shadow h-100 py-2 border-primary border-start-4">
+            <div class="card-body">
+                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Pojazdy w Obiegu</div>
+                <div class="h5 mb-0 font-weight-bold text-dark">@Model.TotalPojazdowDzialajacych / @Model.ListaPojazdow.Count</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-4">
+        <div class="card shadow h-100 py-2 border-danger border-start-4">
+            <div class="card-body">
+                <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Pojazdy w Serwisie</div>
+                <div class="h5 mb-0 font-weight-bold text-dark">@Model.WSerwisiePojazdy</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6"></div>
+
+</div>
+
+<div class="row mb-5">
+
+    <div class="col-xl-8 col-lg-7">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 bg-white d-flex flex-row align-items-center justify-content-between border-bottom-0">
+                <h6 class="m-0 font-weight-bold text-primary"><i class="fa-solid fa-chart-bar me-2"></i>Przegląd Miesięcznych Przychodów</h6>
+            </div>
+            <div class="card-body">
+                <div class="chart-area" style="position: relative; height: 350px;">
+                    <canvas id="monthlyRevenueChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-4 col-lg-5">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 bg-white d-flex flex-row align-items-center justify-content-between border-bottom-0">
+                <h6 class="m-0 font-weight-bold text-primary"><i class="fa-solid fa-chart-pie me-2"></i>Popularność Modeli</h6>
+            </div>
+            <div class="card-body">
+                <div class="chart-area" style="position: relative; height: 300px;">
+                    <canvas id="popularnoscChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="row">
+
+    <div class="col-xl-12 col-lg-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 bg-white border-bottom-0">
+                <h6 class="m-0 font-weight-bold text-primary"><i class="fa-solid fa-list-check me-2"></i>Najnowsze Zmiany Statusu Floty</h6>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    @foreach (var pojazd in Model.ListaPojazdow.Take(8))
+                    {
+                        var badgeClass = pojazd.Status switch
+                        {
+                            "Dostepny" => "bg-success",
+                            "Wynajety" => "bg-warning text-dark",
+                            "Serwis" => "bg-danger",
+                            _ => "bg-secondary"
+                        };
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <small class="text-muted d-block">@pojazd.NumerVin</small>
+                                <strong>@pojazd.Model?.NazwaModelu</strong>
+                            </div>
+                            <span class="badge rounded-pill @badgeClass">@pojazd.Status</span>
+                        </li>
+                    }
+                </ul>
+                <div class="card-footer text-center">
+                    <a asp-page="/Pojazdy/Index" class="small font-weight-bold">Zobacz pełną flotę &rarr;</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <script>
+
+        const monthlyDataJson = '@Html.Raw(ViewData["MonthlyRevenueJson"])';
+        const monthlyData = JSON.parse(monthlyDataJson);
+
+        function createMonthlyRevenueChart() {
+            const ctx = document.getElementById('monthlyRevenueChart').getContext('2d');
+
+            if (monthlyData && monthlyData.length > 0) {
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: monthlyData.map(i => i.MonthName),
+                        datasets: [{
+                            label: 'Przychód Brutto (PLN)',
+                            data: monthlyData.map(i => i.TotalRevenue),
+                            backgroundColor: 'rgba(78, 115, 223, 0.7)',
+                            borderColor: '#4e73df',
+                            borderWidth: 1,
+                            borderRadius: 4,
+                        }]
+                    },
+                    options: {
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { grid: { display: false } },
+                            y: {
+                                beginAtZero: true,
+                                grid: { borderDash: [2] },
+                                ticks: {
+                                    callback: function(value) {
+              
+                                        return value.toLocaleString('pl-PL', { style: 'currency', currency: 'PLN', minimumFractionDigits: 0 });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } else {
+                 $('#monthlyRevenueChart').replaceWith('<div class="text-center p-5 text-muted">Brak danych opłaconych faktur w tym roku.</div>');
+            }
+        }
+
+        $(document).ready(function () {
+     
+            fetch('/api/Raporty/popularne_modele')
+                .then(r => r.ok ? r.json() : [])
+                .then(data => {
+                    const ctx = document.getElementById('popularnoscChart').getContext('2d');
+                    if (data.length > 0) {
+                        new Chart(ctx, {
+                            type: 'doughnut',
+                            data: {
+                                labels: data.map(i => i.model),
+                                datasets: [{
+                                    data: data.map(i => i.liczbaWynajmow),
+                                    backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b'],
+                                    borderWidth: 1
+                                }]
+                            },
+                            options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                        });
+                    } else {
+                        $('#popularnoscChart').replaceWith('<div class="text-center p-5 text-muted">Brak danych do raportu popularności.</div>');
+                    }
+                })
+                .catch(e => console.error('Błąd ładowania wykresu popularności:', e));
+
+            createMonthlyRevenueChart();
+        });
+    </script>
+}

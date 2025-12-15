@@ -1,0 +1,89 @@
+﻿@page
+@model WypozyczalniaApp.Pages.Pracownicy.EditModel
+
+@{
+    ViewData["Title"] = "Edytuj Pracownika";
+}
+
+<h1>Edytuj Pracownika</h1>
+<hr />
+<div class="row">
+    <div class="col-md-6">
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="Pracownik.PracownikId" />
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h6 class="m-0 fw-bold text-primary">Dane Osobowe</h6>
+                </div>
+                <div class="card-body">
+                    <div class="form-group mb-3">
+                        <label asp-for="Pracownik.Imie" class="control-label">Imię</label>
+                        <input asp-for="Pracownik.Imie" class="form-control" />
+                        <span asp-validation-for="Pracownik.Imie" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label asp-for="Pracownik.Nazwisko" class="control-label">Nazwisko</label>
+                        <input asp-for="Pracownik.Nazwisko" class="form-control" />
+                        <span asp-validation-for="Pracownik.Nazwisko" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label asp-for="Pracownik.Login" class="control-label">Login</label>
+                        <input asp-for="Pracownik.Login" class="form-control" />
+                        <span asp-validation-for="Pracownik.Login" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group mb-0">
+                        <label asp-for="Pracownik.HasloHash" class="control-label">Nowe Hasło</label>
+                        <input asp-for="Pracownik.HasloHash" class="form-control" type="password" placeholder="Pozostaw puste, aby nie zmieniać" />
+                        <span asp-validation-for="Pracownik.HasloHash" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-4 border-info">
+                <div class="card-header bg-info text-white">
+                    <h6 class="m-0 fw-bold"><i class="fa-solid fa-user-shield me-2"></i>Uprawnienia i Role</h6>
+                </div>
+                <div class="card-body">
+                    <p class="small text-muted mb-2">Zaznacz role, które ma posiadać ten użytkownik:</p>
+
+                    @foreach (var rola in Model.DostepneRole)
+                    {
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox"
+                                   name="WybraneRoleIds"
+                                   value="@rola.RolaId"
+                                   id="role_@rola.RolaId"
+                                   @(Model.WybraneRoleIds.Contains(rola.RolaId) ? "checked" : "") />
+                            <label class="form-check-label" for="role_@rola.RolaId">
+                                <strong>@rola.NazwaRoli</strong>
+                            </label>
+                        </div>
+                    }
+
+                    @if (!Model.DostepneRole.Any())
+                    {
+                        <div class="alert alert-warning">
+                            Brak zdefiniowanych ról w bazie danych.
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary shadow-sm"><i class="fa-solid fa-save me-1"></i> Zapisz Zmiany</button>
+                <a asp-page="./Index" class="btn btn-secondary shadow-sm">Anuluj</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

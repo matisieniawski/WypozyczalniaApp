@@ -1,0 +1,19 @@
+﻿@page
+@model WypozyczalniaApp.Pages.Account.AccessDeniedModel
+
+@{
+    ViewData["Title"] = "Brak Dostępu";
+}
+
+<header class="text-center mt-5">
+    <h1 class="text-danger">Brak Wymaganych Uprawnień (Błąd 403)</h1>
+    <p class="lead">
+        Nie masz uprawnień do wyświetlenia tej strony.
+        Skontaktuj się z administratorem, aby uzyskać dostęp do modułu.
+    </p>
+</header>
+
+<div class="text-center mt-4">
+    <a asp-page="/Index" class="btn btn-secondary">Wróć na stronę główną</a>
+    <a asp-page="/Account/Login" class="btn btn-warning">Spróbuj zalogować się ponownie</a>
+</div>

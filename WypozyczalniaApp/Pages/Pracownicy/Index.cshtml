@@ -1,0 +1,91 @@
+﻿@page
+@model WypozyczalniaApp.Pages.Pracownicy.IndexModel
+@using Microsoft.AspNetCore.Html;
+
+@{
+    ViewData["Title"] = "Pracownicy";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 text-gray-800"><i class="fa-solid fa-id-card me-2"></i>Personel</h1>
+    <a asp-page="Create" class="btn btn-primary shadow-sm">
+        <i class="fa-solid fa-user-plus me-1"></i> Dodaj Pracownika
+    </a>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        @{
+                            string GetSortArrow(string column)
+                            {
+                                if (Model.SortColumn != column) return "";
+                                return Model.SortDirection == "Asc" ? "fa-arrow-up" : "fa-arrow-down";
+                            }
+                            string GetNextSortDirection(string currentColumn)
+                            {
+                                if (Model.SortColumn != currentColumn) return "Asc";
+                                return Model.SortDirection == "Asc" ? "Desc" : "Asc";
+                            }
+
+                            IHtmlContent CreateSortLink(string columnName, string display, string defaultDir = "Asc")
+                            {
+                                var nextDir = GetNextSortDirection(columnName);
+
+                                var url = Url.Page("./Index", new
+                                {
+                                    SortColumn = columnName,
+                                    SortDirection = nextDir
+                                });
+
+                                return new HtmlString($@"
+                                                <a href='{url}' class='text-decoration-none text-dark fw-bold'>
+                                                {display} <i class='fa-solid {GetSortArrow(columnName)} ms-1'></i>
+                                                </a>");
+                            }
+
+                            string GetRoleBadgeClass(string role) => role switch
+                            {
+                                "Administrator" => "bg-danger",
+                                "Manager" => "bg-primary",
+                                _ => "bg-secondary"
+                            };
+                        }
+                        <th class="ps-4">@CreateSortLink("Nazwisko", "Imię i Nazwisko")</th>
+                        <th>@CreateSortLink("Login", "Login")</th>
+                        <th>@CreateSortLink("Role", "Rola")</th>
+                        <th class="text-end pe-4">Akcje</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Pracownicy)
+                    {
+                        <tr>
+                            <td class="fw-bold ps-4">@item.Imie @item.Nazwisko</td>
+                            <td><span class="badge bg-light text-dark border">@item.Login</span></td>
+                            <td>
+                                @foreach (var role in item.RoleList.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                                {
+                                    <span class="badge @GetRoleBadgeClass(role.Trim()) me-1">@role.Trim()</span>
+                                }
+                            </td>
+                            <td class="text-end pe-4">
+                                <div class="btn-group" role="group">
+                                    <a asp-page="./Edit" asp-route-id="@item.PracownikId" class="btn btn-sm btn-outline-primary" title="Edytuj Uprawnienia">
+                                        <i class="fa-solid fa-user-shield"></i>
+                                    </a>
+                                    <a asp-page="./Delete" asp-route-id="@item.PracownikId" class="btn btn-sm btn-outline-danger" title="Usuń">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,31 @@
+﻿@page
+@model WypozyczalniaApp.Pages.Pracownicy.DeleteModel
+
+@{
+    ViewData["Title"] = "Usuń Pracownika";
+}
+
+<h1 class="text-danger">Usuń Pracownika</h1>
+<div class="alert alert-warning">
+    <i class="fa-solid fa-triangle-exclamation me-2"></i>
+    Czy na pewno chcesz usunąć to konto? Ta operacja jest nieodwracalna.
+</div>
+
+<div class="card shadow-sm p-3 mb-4 border-danger">
+    <dl class="row">
+        <dt class="col-sm-2">Imię</dt>
+        <dd class="col-sm-10">@Html.DisplayFor(model => model.Pracownik.Imie)</dd>
+
+        <dt class="col-sm-2">Nazwisko</dt>
+        <dd class="col-sm-10">@Html.DisplayFor(model => model.Pracownik.Nazwisko)</dd>
+
+        <dt class="col-sm-2">Login</dt>
+        <dd class="col-sm-10">@Html.DisplayFor(model => model.Pracownik.Login)</dd>
+    </dl>
+
+    <form method="post">
+        <input type="hidden" asp-for="Pracownik.PracownikId" />
+        <input type="submit" value="Usuń trwale" class="btn btn-danger" />
+        <a asp-page="./Index" class="btn btn-secondary">Anuluj</a>
+    </form>
+</div>

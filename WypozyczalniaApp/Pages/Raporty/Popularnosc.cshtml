@@ -1,0 +1,113 @@
+﻿@page
+@model WypozyczalniaApp.Pages.Raporty.PopularnoscModel
+@{
+    ViewData["Title"] = "Raport Popularności";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 text-gray-800"><i class="fa-solid fa-chart-pie me-2"></i>Raporty Analityczne</h1>
+    <span class="badge bg-info text-dark shadow-sm">
+        <i class="fa-solid fa-rotate me-1"></i> Dane na żywo
+    </span>
+</div>
+
+<div class="row">
+
+    <div class="col-xl-8 col-lg-7">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between bg-white border-bottom-0">
+                <h6 class="m-0 font-weight-bold text-primary">Najczęściej Wynajmowane Modele</h6>
+            </div>
+            <div class="card-body">
+                <div class="chart-area" style="position: relative; height:400px; width:100%">
+                    <canvas id="popularnoscChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-4 col-lg-5">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 bg-white border-bottom-0">
+                <h6 class="m-0 font-weight-bold text-primary">Szczegóły Raportu</h6>
+            </div>
+            <div class="card-body">
+                <p>Poniższy wykres prezentuje ranking popularności modeli pojazdów w oparciu o liczbę zrealizowanych transakcji wynajmu.</p>
+
+                <div class="alert alert-light border">
+                    <i class="fa-solid fa-database me-2 text-primary"></i>
+                    Dane agregowane są bezpośrednio z bazy danych przy użyciu widoku SQL: <code>widok_popularnosc_modeli</code>.
+                </div>
+
+                <hr />
+                <div class="small text-muted">
+                    Zastosowano klauzule <code>GROUP BY</code> oraz <code>HAVING</code> w zapytaniu bazodanowym.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+
+            fetch('/api/Raporty/popularne_modele')
+                .then(response => {
+                    if (!response.ok) throw new Error('Błąd dostępu lub brak danych');
+                    return response.json();
+                })
+                .then(data => {
+                    const ctx = document.getElementById('popularnoscChart').getContext('2d');
+
+                    if (data && data.length > 0) {
+                        new Chart(ctx, {
+                            type: 'bar',
+                            data: {
+                                labels: data.map(i => i.model),
+                                datasets: [{
+                                    label: 'Liczba Wynajmów',
+                                    data: data.map(i => i.liczbaWynajmow),
+                                    backgroundColor: 'rgba(78, 115, 223, 0.7)',
+                                    borderColor: 'rgba(78, 115, 223, 1)',
+                                    borderWidth: 1,
+                                    borderRadius: 4,
+                                    barPercentage: 0.6
+                                }]
+                            },
+                            options: {
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { display: false },
+                                    tooltip: {
+                                        backgroundColor: "rgb(255,255,255)",
+                                        bodyColor: "#858796",
+                                        titleColor: "#6e707e",
+                                        borderColor: '#dddfeb',
+                                        borderWidth: 1,
+                                        padding: 15,
+                                        displayColors: false,
+                                    }
+                                },
+                                scales: {
+                                    y: {
+                                        beginAtZero: true,
+                                        grid: { borderDash: [2], drawBorder: false },
+                                        ticks: { stepSize: 1 }
+                                    },
+                                    x: {
+                                        grid: { display: false, drawBorder: false }
+                                    }
+                                }
+                            }
+                        });
+                    } else {
+                        $('#popularnoscChart').replaceWith('<div class="text-center p-5 text-muted"><i class="fa-solid fa-chart-simple fa-3x mb-3"></i><br>Brak danych do wyświetlenia.</div>');
+                    }
+                })
+                .catch(e => console.error(e));
+        });
+    </script>
+}

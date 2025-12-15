@@ -1,0 +1,197 @@
+﻿@page
+@model WypozyczalniaApp.Pages.Modele.IndexModel
+@using Microsoft.AspNetCore.Html;
+@using Microsoft.AspNetCore.Mvc.Rendering;
+
+@{
+    ViewData["Title"] = "Katalog Modeli";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 text-gray-800"><i class="fa-solid fa-layer-group me-2"></i>Katalog Modeli</h1>
+    <a asp-page="Create" class="btn btn-primary shadow-sm">
+        <i class="fa-solid fa-plus me-1"></i> Nowy Model
+    </a>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end" id="filterForm">
+
+            <div class="col-md-3">
+                <label for="ProducerFilter" class="form-label small text-muted">Filtruj Producenta</label>
+                <select id="ProducerFilter" name="ProducerFilter" class="form-select" asp-items="Model.AvailableProducers" onchange="filterModels()">
+                    <option value="">Wszyscy Producenci</option>
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label for="ModelFilter" class="form-label small text-muted">Filtruj Model</label>
+                <select id="ModelFilter" name="ModelFilter" class="form-select" asp-items="Model.AvailableModels">
+                    <option value="">Wszystkie Modele</option>
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label for="MinPriceFilter" class="form-label small text-muted">Cena Min.</label>
+                <input type="number" step="0.01" id="MinPriceFilter" name="MinPriceFilter" value="@Model.MinPriceFilter" class="form-control" />
+            </div>
+
+            <div class="col-md-2">
+                <label for="MaxPriceFilter" class="form-label small text-muted">Cena Max.</label>
+                <input type="number" step="0.01" id="MaxPriceFilter" name="MaxPriceFilter" value="@Model.MaxPriceFilter" class="form-control" />
+            </div>
+
+            <div class="col-md-2 d-flex justify-content-end">
+                <button type="submit" class="btn btn-primary me-2"><i class="fa-solid fa-filter me-1"></i> Filtruj</button>
+                <a asp-page="./Index" class="btn btn-outline-secondary"><i class="fa-solid fa-xmark me-1"></i> Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        @{
+                            string GetSortArrow(string column)
+                            {
+                                if (Model.SortColumn != column) return "";
+                                return Model.SortDirection == "Asc" ? "fa-arrow-up" : "fa-arrow-down";
+                            }
+                            string GetNextSortDirection(string currentColumn)
+                            {
+                                if (Model.SortColumn != currentColumn) return "Asc";
+                                return Model.SortDirection == "Asc" ? "Desc" : "Asc";
+                            }
+
+                            IHtmlContent CreateSortLink(string columnName, string display, string defaultDir = "Asc")
+                            {
+                                var nextDir = GetNextSortDirection(columnName);
+
+                                var url = Url.Page("./Index", new
+                                {
+                                    SortColumn = columnName,
+                                    SortDirection = nextDir,
+                                    ProducerFilter = Model.ProducerFilter,
+                                    ModelFilter = Model.ModelFilter,
+                                    MinPriceFilter = Model.MinPriceFilter,
+                                    MaxPriceFilter = Model.MaxPriceFilter
+                                });
+
+                                return new HtmlString($@"
+                                                <a href='{url}' class='text-decoration-none text-dark fw-bold'>
+                                                {display} <i class='fa-solid {GetSortArrow(columnName)} ms-1'></i>
+                                                </a>");
+                            }
+                        }
+                        <th>@CreateSortLink("Producent", "Producent")</th>
+                        <th>@CreateSortLink("Nazwa", "Model")</th>
+                        <th>@CreateSortLink("Cena", "Cennik (Doba)")</th>
+                        <th class="text-end">Zarządzaj</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Modele)
+                    {
+                        <tr>
+                            <td class="align-middle">
+                                <span class="badge bg-light text-dark border">@item.Producent.Nazwa</span>
+                            </td>
+                            <td class="align-middle fw-bold">@item.NazwaModelu</td>
+                            <td class="align-middle text-primary">@item.CenaZaDobe.ToString("C")</td>
+                            <td class="text-end">
+                                <div class="btn-group" role="group">
+                                    <a asp-page="./Edit" asp-route-id="@item.ModelId" class="btn btn-sm btn-outline-primary" title="Edytuj">
+                                        <i class="fa-solid fa-pen"></i>
+                                    </a>
+                                    <a asp-page="./Delete" asp-route-id="@item.ModelId" class="btn btn-sm btn-outline-danger" title="Usuń">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        const allModelsDataJson = '@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.AllModelsData))';
+        let allModelsData;
+
+        try {
+
+            allModelsData = JSON.parse(allModelsDataJson);
+        } catch (e) {
+            console.error('Błąd parsowania danych modeli.', e);
+            allModelsData = [];
+        }
+
+
+        const currentModelSelection = '@Model.ModelFilter';
+
+
+        function filterModels() {
+            const producerSelect = document.getElementById('ProducerFilter');
+            const modelSelect = document.getElementById('ModelFilter');
+            const selectedProducer = producerSelect.value;
+            const defaultOption = modelSelect.options[0];
+            const previousModelValue = modelSelect.value;
+            modelSelect.innerHTML = '';
+
+            if (defaultOption) {
+                modelSelect.appendChild(defaultOption);
+            } else {
+                const newDefaultOption = document.createElement('option');
+                newDefaultOption.value = '';
+                newDefaultOption.textContent = 'Wszystkie Modele';
+                modelSelect.appendChild(newDefaultOption);
+            }
+
+            const availableModels = new Set();
+
+
+            allModelsData.forEach(item => {
+                if (!selectedProducer || item.Producent.Nazwa === selectedProducer) {
+
+                    if (!availableModels.has(item.NazwaModelu)) {
+                        const option = document.createElement('option');
+                        option.value = item.NazwaModelu;
+                        option.textContent = item.NazwaModelu;
+
+
+                        if (item.NazwaModelu === previousModelValue) {
+                            option.selected = true;
+                        }
+
+                        modelSelect.appendChild(option);
+                        availableModels.add(item.NazwaModelu);
+                    }
+                }
+            });
+
+
+            if (previousModelValue && modelSelect.value !== previousModelValue) {
+                modelSelect.value = ''; 
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            if ('@Model.ProducerFilter' && '@Model.ProducerFilter' !== '') {
+                filterModels();
+            }
+        });
+
+    </script>
+}

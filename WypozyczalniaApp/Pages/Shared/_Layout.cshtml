@@ -1,0 +1,191 @@
+﻿<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - System Wypożyczalni</title>
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f8f9fa;
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .card {
+            border: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+
+            .card:hover {
+                transform: translateY(-2px);
+            }
+
+        .nav-link {
+            font-weight: 500;
+        }
+
+        h1, h2 {
+            color: #2c3e50;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body class="d-flex flex-column min-vh-100">
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm mb-4">
+            <div class="container">
+                <a class="navbar-brand" asp-area="" asp-page="/Menu">
+                    <i class="fa-solid fa-car-side me-2"></i>SpeedRent        
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+
+                    <ul class="navbar-nav flex-grow-1">
+
+
+                        <li class="nav-item">
+                            <a class="nav-link" asp-area="" asp-page="/Menu">
+                                <i class="fa-solid fa-gauge me-1"></i> Pulpit
+                            </a>
+                        </li>
+
+                        @if (User.Identity!.IsAuthenticated)
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownFlota" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fa-solid fa-truck-pickup me-1"></i> Flota
+                                </a>
+                                <ul class="dropdown-menu border-0 shadow" aria-labelledby="navbarDropdownFlota">
+                                    <li><a class="dropdown-item" asp-page="/Pojazdy/Index"><i class="fa-solid fa-list me-2 text-primary"></i>Lista Pojazdów</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" asp-page="/Modele/Index"><i class="fa-solid fa-car me-2 text-secondary"></i>Modele</a></li>
+                                    <li><a class="dropdown-item" asp-page="/Producenci/Index"><i class="fa-solid fa-industry me-2 text-secondary"></i>Producenci</a></li>
+
+                                    @if (User.IsInRole("Manager") || User.IsInRole("Administrator"))
+                                    {
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" asp-page="/Serwis/Index"><i class="fa-solid fa-wrench me-2 text-danger"></i>Serwisowanie</a></li>
+                                    }
+                                </ul>
+                            </li>
+
+
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownOps" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fa-solid fa-users me-1"></i> Operacje
+                                </a>
+                                <ul class="dropdown-menu border-0 shadow" aria-labelledby="navbarDropdownOps">
+                                    <li><a class="dropdown-item" asp-page="/Klienci/Index"><i class="fa-solid fa-user-group me-2 text-primary"></i>Baza Klientów</a></li>
+                                    <li><a class="dropdown-item" asp-page="/Wynajmy/Index"><i class="fa-solid fa-file-contract me-2 text-primary"></i>Lista Wynajmów</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item fw-bold" asp-page="/Wynajmy/Create"><i class="fa-solid fa-plus me-2 text-success"></i>Nowy Wynajem</a></li>
+                                </ul>
+                            </li>
+
+              
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownFin" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fa-solid fa-file-invoice-dollar me-1"></i> Finanse
+                                </a>
+                                <ul class="dropdown-menu border-0 shadow" aria-labelledby="navbarDropdownFin">
+                                    <li><a class="dropdown-item" asp-page="/Faktury/Index"><i class="fa-solid fa-file-invoice me-2"></i>Faktury</a></li>
+                                </ul>
+                            </li>
+
+        
+                            @if (User.IsInRole("Administrator") || User.IsInRole("Manager"))
+                            {
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownAdmin" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fa-solid fa-shield-halved me-1"></i> Admin
+                                    </a>
+                                    <ul class="dropdown-menu border-0 shadow" aria-labelledby="navbarDropdownAdmin">
+                                        <li><a class="dropdown-item" asp-page="/Pracownicy/Index"><i class="fa-solid fa-id-card me-2"></i>Pracownicy</a></li>
+                                        <li><a class="dropdown-item" asp-page="/Lokalizacje/Index"><i class="fa-solid fa-map-location-dot me-2"></i>Lokalizacje</a></li>
+                                    </ul>
+                                </li>
+                            }
+
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownRep" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fa-solid fa-chart-line me-1"></i> Raporty
+                                </a>
+                                <ul class="dropdown-menu border-0 shadow" aria-labelledby="navbarDropdownRep">
+    
+                                    <li><a class="dropdown-item" asp-page="/Raporty/Przychody"><i class="fa-solid fa-chart-line me-2 text-success"></i>Miesięczne Przychody</a></li>
+
+                                    <li><a class="dropdown-item" asp-page="/Raporty/Popularnosc"><i class="fa-solid fa-chart-pie me-2 text-info"></i>Popularność Modeli</a></li>
+                                    <li><a class="dropdown-item" asp-page="/Raporty/OblozenieFloty"><i class="fa-solid fa-chart-pie me-2 text-info"></i>Obłożenie Floty</a></li>
+                                </ul>
+                            </li>
+                        }
+                    </ul>
+
+  
+                    <ul class="navbar-nav">
+                        @if (User.Identity!.IsAuthenticated)
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownUser" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fa-solid fa-user-circle me-1"></i> @User.Identity.Name
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end border-0 shadow" aria-labelledby="navbarDropdownUser">
+                                    <li>
+                                        <form method="post" asp-page="/Account/Logout" class="d-inline">
+                                            <button type="submit" class="dropdown-item text-danger">
+                                                <i class="fa-solid fa-right-from-bracket me-2"></i> Wyloguj
+                                            </button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-page="/Account/Login">
+                                    <i class="fa-solid fa-right-to-bracket me-1"></i> Zaloguj
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <div class="container flex-grow-1">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="border-top footer text-muted bg-white mt-auto py-3">
+        <div class="container text-center">
+            &copy; 2025 - System Wypożyczalni Samochodów SpeedRent - <a asp-area="" asp-page="/Privacy">Prywatność</a>
+        </div>
+    </footer>
+
+    <!-- Skrypty -->
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

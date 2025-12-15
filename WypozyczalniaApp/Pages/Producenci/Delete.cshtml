@@ -1,0 +1,26 @@
+﻿@page
+@model WypozyczalniaApp.Pages.Producenci.DeleteModel
+
+@{
+    ViewData["Title"] = "Usuń Producenta";
+}
+
+<h1 class="text-danger">Usuń Producenta</h1>
+<div class="alert alert-warning">
+    <i class="fa-solid fa-triangle-exclamation me-2"></i>
+    <strong>Uwaga:</strong> Usunięcie producenta jest możliwe tylko wtedy, gdy nie ma przypisanych do niego żadnych modeli pojazdów.
+</div>
+
+<h3>Czy na pewno chcesz usunąć tę markę?</h3>
+<div class="card shadow-sm p-3 mb-4 border-danger">
+    <dl class="row">
+        <dt class="col-sm-2">Nazwa</dt>
+        <dd class="col-sm-10">@Html.DisplayFor(model => model.Producent.Nazwa)</dd>
+    </dl>
+
+    <form method="post">
+        <input type="hidden" asp-for="Producent.ProducentId" />
+        <input type="submit" value="Usuń trwale" class="btn btn-danger" />
+        <a asp-page="./Index" class="btn btn-secondary">Anuluj</a>
+    </form>
+</div>

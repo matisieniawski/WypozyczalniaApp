@@ -1,0 +1,39 @@
+﻿@page
+@model WypozyczalniaApp.Pages.Lokalizacje.CreateModel
+
+@{
+    ViewData["Title"] = "Dodaj Lokalizację";
+}
+
+<h1>Nowy Oddział</h1>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Lokalizacja.Nazwa" class="control-label">Nazwa Oddziału</label>
+                <input asp-for="Lokalizacja.Nazwa" class="form-control" placeholder="np. Warszawa Lotnisko" />
+                <span asp-validation-for="Lokalizacja.Nazwa" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Lokalizacja.Adres" class="control-label">Adres</label>
+                <input asp-for="Lokalizacja.Adres" class="form-control" />
+                <span asp-validation-for="Lokalizacja.Adres" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <input type="submit" value="Utwórz" class="btn btn-success" />
+                <a asp-page="Index" class="btn btn-secondary">Anuluj</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

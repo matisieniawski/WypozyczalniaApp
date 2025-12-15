@@ -1,0 +1,52 @@
+﻿@page
+@model WypozyczalniaApp.Pages.Pracownicy.CreateModel
+
+@{
+    ViewData["Title"] = "Dodaj Pracownika";
+}
+
+<h1>Dodaj Pracownika</h1>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Pracownik.Imie" class="control-label">Imię</label>
+                <input asp-for="Pracownik.Imie" class="form-control" />
+                <span asp-validation-for="Pracownik.Imie" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Pracownik.Nazwisko" class="control-label">Nazwisko</label>
+                <input asp-for="Pracownik.Nazwisko" class="form-control" />
+                <span asp-validation-for="Pracownik.Nazwisko" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Pracownik.Login" class="control-label">Login</label>
+                <input asp-for="Pracownik.Login" class="form-control" autocomplete="off" />
+                <span asp-validation-for="Pracownik.Login" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Pracownik.HasloHash" class="control-label">Hasło</label>
+                <input asp-for="Pracownik.HasloHash" class="form-control" type="password" autocomplete="new-password" />
+                <span asp-validation-for="Pracownik.HasloHash" class="text-danger"></span>
+                <small class="text-muted">Podaj hasło dla nowego użytkownika.</small>
+            </div>
+
+            <div class="form-group">
+                <input type="submit" value="Utwórz" class="btn btn-success" />
+                <a asp-page="Index" class="btn btn-secondary">Anuluj</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
