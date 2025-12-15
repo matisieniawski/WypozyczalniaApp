@@ -15,35 +15,37 @@ if (!string.IsNullOrEmpty(port))
     });
 }
 
-
+// --- KLUCZOWA ZMIANA: Konwersja formatu URL z Render na format oczekiwany przez Npgsql ---
 var databaseUrl = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
 
-
+// Sprawdzamy, czy string po³¹czenia u¿ywa formatu URL (postgres://)
 if (!string.IsNullOrEmpty(databaseUrl) && databaseUrl.StartsWith("postgres://"))
 {
-
+    // KLUCZOWA POPRAWKA: Render u¿ywa 'postgres://', a standardowo powinno byæ 'postgresql://'.
+    // Zamieniamy 'postgres://' na 'Host=', aby Npgsql móg³ poprawnie sparsowaæ resztê ci¹gu jako URI.
     databaseUrl = databaseUrl.Replace("postgres://", "Host=");
 
-    var uri = new Uri(databaseUrl);
-    var userInfo = uri.UserInfo.Split(':');
+    // Tworzymy NpgsqlConnectionStringBuilder bezpoœrednio z ci¹gu URL (co jest mo¿liwe, jeœli poprawiliœmy prefix)
+    var connBuilder = new NpgsqlConnectionStringBuilder(databaseUrl);
 
+    // Dodajemy wymagane ustawienia SSL dla Render.com
+    connBuilder.SslMode = SslMode.Prefer;
+    connBuilder.TrustServerCertificate = true;
 
-    var connString = $"Host={uri.Host};Port={uri.Port};Database={uri.Segments.Last()};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Prefer;Trust Server Certificate=true";
-
-
+    // Zapisujemy nowy, ju¿ skonwertowany ci¹g po³¹czenia do konfiguracji EF Core
     builder.Services.AddDbContext<WypozyczalniaDbContext>(options =>
-        options.UseNpgsql(connString));
+        options.UseNpgsql(connBuilder.ToString()));
 }
 else
 {
-
+    // U¿ywamy starego kodu, jeœli zmienna nie jest ustawiona lub jest w tradycyjnym formacie
     builder.Services.AddDbContext<WypozyczalniaDbContext>(options =>
         options.UseNpgsql(
             builder.Configuration.GetConnectionString("DefaultConnection")
         )
     );
 }
-
+// -----------------------------------------------------------------------------------------
 
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
