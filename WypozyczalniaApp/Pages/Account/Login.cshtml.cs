@@ -11,6 +11,7 @@ using System.Data.Common;
 
 namespace WypozyczalniaApp.Pages.Account
 {
+    [IgnoreAntiforgeryToken]
     public class LoginModel : PageModel
     {
         private readonly WypozyczalniaDbContext _context;
