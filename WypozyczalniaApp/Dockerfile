@@ -1,5 +1,5 @@
 # Faza 1: Budowa
-FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 # KLUCZOWA ZMIANA 1: Kopiowanie pliku projektu z uwzględnieniem podkatalogu
@@ -15,7 +15,7 @@ COPY . .
 RUN dotnet publish "WypozyczalniaApp/WypozyczalniaApp.csproj" -c Release -o /app/publish 
 
 # Faza 2: Środowisko Uruchomieniowe
-FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
 COPY --from=build /app/publish .
 
