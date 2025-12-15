@@ -1,1 +1,6 @@
-﻿
+﻿@page
+@model IndexModel
+@{
+    // Wymuszamy natychmiastowe przekierowanie strony głównej na stronę logowania.
+    Response.Redirect("/Account/Login");
+}
