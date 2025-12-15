@@ -15,11 +15,36 @@ if (!string.IsNullOrEmpty(port))
     });
 }
 
-builder.Services.AddDbContext<WypozyczalniaDbContext>(options =>
-    options.UseNpgsql(
-        builder.Configuration.GetConnectionString("DefaultConnection")
-    )
-);
+
+var databaseUrl = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
+
+
+if (!string.IsNullOrEmpty(databaseUrl) && databaseUrl.StartsWith("postgres://"))
+{
+
+    databaseUrl = databaseUrl.Replace("postgres://", "Host=");
+
+    var uri = new Uri(databaseUrl);
+    var userInfo = uri.UserInfo.Split(':');
+
+
+    var connString = $"Host={uri.Host};Port={uri.Port};Database={uri.Segments.Last()};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Prefer;Trust Server Certificate=true";
+
+
+    builder.Services.AddDbContext<WypozyczalniaDbContext>(options =>
+        options.UseNpgsql(connString));
+}
+else
+{
+
+    builder.Services.AddDbContext<WypozyczalniaDbContext>(options =>
+        options.UseNpgsql(
+            builder.Configuration.GetConnectionString("DefaultConnection")
+        )
+    );
+}
+
+
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
@@ -56,7 +81,6 @@ else
     app.UseExceptionHandler("/Error");
     app.UseHsts();
 }
-
 
 app.UseStaticFiles();
 app.UseRouting();
