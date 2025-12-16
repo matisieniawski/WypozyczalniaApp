@@ -7,6 +7,7 @@ using System.Data;
 using System.Data.Common;
 using System.Text;
 using System.Globalization;
+using System.Linq;
 
 namespace WypozyczalniaApp.Pages.Raporty
 {
@@ -43,78 +44,104 @@ namespace WypozyczalniaApp.Pages.Raporty
 
         public async Task OnGetAsync()
         {
-            EndDate = EndDate ?? DateTime.Today.AddDays(1).AddSeconds(-1);
+   
+            EndDate = EndDate ?? DateTime.Today.AddDays(1);
             StartDate = StartDate ?? EndDate.Value.AddDays(-30);
+
+
+            var startUtc = DateTime.SpecifyKind(StartDate.Value.Date, DateTimeKind.Utc);
+            var endUtc = DateTime.SpecifyKind(EndDate.Value.Date, DateTimeKind.Utc);
+
+   
+            if (endUtc.TimeOfDay.TotalSeconds == 0)
+            {
+                endUtc = endUtc.AddDays(1).AddSeconds(-1);
+            }
+
+            StartDate = startUtc;
+            EndDate = endUtc;
+
 
             var connection = _context.Database.GetDbConnection();
             await connection.OpenAsync();
 
-
-            using (var command = connection.CreateCommand())
+            try
             {
-                command.CommandText = "SELECT status, COUNT(pojazd_id) FROM pojazdy GROUP BY status";
-
-                using (var reader = await command.ExecuteReaderAsync())
+                using (var command = connection.CreateCommand())
                 {
-                    while (await reader.ReadAsync())
+                    command.CommandText = "SELECT status, COUNT(pojazd_id) FROM pojazdy GROUP BY status";
+
+                    using (var reader = await command.ExecuteReaderAsync())
                     {
-                        var status = reader.GetString(0);
-                        var count = Convert.ToInt32(reader.GetInt64(1));
+                        while (await reader.ReadAsync())
+                        {
+                            var status = reader.GetString(0);
+                            var count = Convert.ToInt32(reader.GetInt64(1)); 
 
-                        if (status == "Dostepny") TotalDostepne = count;
-                        if (status == "Wynajety") TotalWynajete = count;
-                        if (status == "Serwis") TotalSerwis = count;
+                            if (status == "Dostepny") TotalDostepne = count;
+                            if (status == "Wynajety") TotalWynajete = count;
+                            if (status == "Serwis") TotalSerwis = count;
+                        }
                     }
+                    TotalPojazdow = TotalDostepne + TotalWynajete + TotalSerwis;
                 }
-                TotalPojazdow = TotalDostepne + TotalWynajete + TotalSerwis;
-            }
 
 
-            using (var command = connection.CreateCommand())
-            {
-
-                var pStart = command.CreateParameter(); pStart.ParameterName = "@start"; pStart.Value = StartDate.Value.ToUniversalTime(); command.Parameters.Add(pStart);
-                var pEnd = command.CreateParameter(); pEnd.ParameterName = "@end"; pEnd.Value = EndDate.Value.ToUniversalTime(); command.Parameters.Add(pEnd);
-
-                command.CommandText = @"
-                    SELECT 
-                        SUM(
-                            EXTRACT(DAY FROM (
-                                LEAST(data_zwrotu_planowana, @end) - GREATEST(data_wypozyczenia, @start)
-                            ))
-                        )
-                    FROM wynajmy
-                    WHERE (data_wypozyczenia, data_zwrotu_planowana) OVERLAPS (@start::timestamp, @end::timestamp)
-                    AND data_zwrotu_rzeczywista IS NULL";
-
-                var wynajeteDni = await command.ExecuteScalarAsync();
-
-                if (wynajeteDni != null && wynajeteDni != DBNull.Value)
+                using (var command = connection.CreateCommand())
                 {
-                    UtilizationData.Add(new FleetUtilization { Status = "Wynajête Dni", TotalDays = Convert.ToInt32(wynajeteDni) });
+
+                    command.CommandText = @"
+                        SELECT
+                            COALESCE(SUM(
+                                DATE_PART('day', LEAST(data_zwrotu_planowana, @end) - GREATEST(data_wypozyczenia, @start))
+                            ), 0)
+                        FROM wynajmy
+                        WHERE (data_wypozyczenia, data_zwrotu_planowana) OVERLAPS (@start::timestamp, @end::timestamp)";
+
+                    var pStart = command.CreateParameter(); pStart.ParameterName = "@start"; pStart.Value = StartDate.Value; command.Parameters.Add(pStart);
+                    var pEnd = command.CreateParameter(); pEnd.ParameterName = "@end"; pEnd.Value = EndDate.Value; command.Parameters.Add(pEnd);
+
+                    var result = await command.ExecuteScalarAsync();
+
+                    var rentedDays = result != null && result != DBNull.Value ? Convert.ToDouble(result) : 0;
+
+                    UtilizationData.Add(new FleetUtilization { Status = "Wynajête Dni", TotalDays = (int)Math.Round(rentedDays) });
                 }
 
-                command.CommandText = @"
-                    SELECT 
-                        COUNT(s.serwis_id)
-                    FROM serwisowanie s
-                    WHERE s.data_serwisu BETWEEN @start AND @end";
-
-                var serwisDni = await command.ExecuteScalarAsync();
-
-                if (serwisDni != null && serwisDni != DBNull.Value)
+                int totalSerwisEntries = 0;
+                using (var command = connection.CreateCommand())
                 {
-                    UtilizationData.Add(new FleetUtilization { Status = "Dni Serwisu", TotalDays = Convert.ToInt32(serwisDni) });
+                    command.CommandText = @"
+                        SELECT COUNT(DISTINCT pojazd_id)
+                        FROM serwisowanie s
+                        WHERE s.data_serwisu BETWEEN @start AND @end";
+
+                    var pStart = command.CreateParameter(); pStart.ParameterName = "@start"; pStart.Value = StartDate.Value; command.Parameters.Add(pStart);
+                    var pEnd = command.CreateParameter(); pEnd.ParameterName = "@end"; pEnd.Value = EndDate.Value; command.Parameters.Add(pEnd);
+
+                    var result = await command.ExecuteScalarAsync();
+                    totalSerwisEntries = Convert.ToInt32(result);
                 }
 
-                var totalDaysInPeriod = (int)(EndDate.Value - StartDate.Value).TotalDays;
+                UtilizationData.Add(new FleetUtilization { Status = "Dni Serwisu", TotalDays = totalSerwisEntries });
 
+                // Dni dostêpne to reszta
+                var totalPeriodDays = (int)(EndDate.Value.Date - StartDate.Value.Date).TotalDays;
+                var totalCapacity = TotalPojazdow * totalPeriodDays;
+                var wynajeteDni = UtilizationData.FirstOrDefault(d => d.Status == "Wynajête Dni")?.TotalDays ?? 0;
+                var serwisDni = UtilizationData.FirstOrDefault(d => d.Status == "Dni Serwisu")?.TotalDays ?? 0;
+
+                var availableDays = Math.Max(0, totalCapacity - wynajeteDni - serwisDni);
+
+                UtilizationData.Add(new FleetUtilization { Status = "Dostêpne Dni", TotalDays = availableDays });
 
             }
-
-            if (connection.State == ConnectionState.Open)
+            finally
             {
-                await connection.CloseAsync();
+                if (connection.State == ConnectionState.Open)
+                {
+                    await connection.CloseAsync();
+                }
             }
         }
     }
