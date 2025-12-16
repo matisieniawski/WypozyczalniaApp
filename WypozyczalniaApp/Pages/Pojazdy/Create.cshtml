@@ -12,12 +12,34 @@
         <form method="post">
             <div asp-validation-summary="All" class="text-danger mb-3 border p-3 bg-light"></div>
 
+
             <div class="form-group mb-3">
-                <label asp-for="Pojazd.ModelId" class="control-label">Model Pojazdu</label>
-                <select asp-for="Pojazd.ModelId" class="form-control" asp-items="ViewBag.ModelId">
-                    <option value="">-- Wybierz Model --</option>
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <label class="control-label">Producent</label>
+                    <a asp-page="/Producenci/Create" target="_blank" class="small text-decoration-none">
+                        <i class="fa-solid fa-plus-circle me-1"></i> Dodaj
+                    </a>
+                </div>
+                <select id="ProducerSelect" class="form-select" asp-items="Model.AvailableProducenci" onchange="filterModels()">
+                    <option value="">-- Wybierz Producenta --</option>
                 </select>
             </div>
+
+            <div class="form-group mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <label asp-for="Pojazd.ModelId" class="control-label">Model Pojazdu</label>
+                    <a asp-page="/Modele/Create" target="_blank" class="small text-decoration-none">
+                        <i class="fa-solid fa-plus-circle me-1"></i> Dodaj
+                    </a>
+                </div>
+
+                <select asp-for="Pojazd.ModelId" id="ModelSelect" class="form-select">
+                    <option value="">-- Wybierz Model --</option>
+                </select>
+                <span asp-validation-for="Pojazd.ModelId" class="text-danger"></span>
+            </div>
+
+
 
             <div class="form-group mb-3">
                 <label asp-for="Pojazd.NumerVin" class="control-label">Numer VIN</label>
@@ -34,7 +56,6 @@
 
             <div class="form-group mb-3">
                 <label asp-for="Pojazd.DataDodania" class="control-label">Data Dodania</label>
-
                 <input asp-for="Pojazd.DataDodania" class="form-control" type="date" />
                 <span asp-validation-for="Pojazd.DataDodania" class="text-danger"></span>
             </div>
@@ -61,4 +82,57 @@
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
+
+    <script>
+  
+        const allModelsDataJson = '@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.AllModelsData))';
+        let allModelsData;
+
+        try {
+            allModelsData = JSON.parse(allModelsDataJson);
+        } catch (e) {
+            console.error('Błąd parsowania danych modeli.', e);
+            allModelsData = [];
+        }
+
+        function filterModels() {
+            const producerSelect = document.getElementById('ProducerSelect');
+            const modelSelect = document.getElementById('ModelSelect');
+            const selectedProducerId = producerSelect.value;
+
+  
+            modelSelect.innerHTML = '';
+
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = '-- Wybierz Model --';
+            modelSelect.appendChild(defaultOption);
+
+            if (selectedProducerId) {
+ 
+                const filteredModels = allModelsData.filter(item =>
+                    item.ProducentId.toString() === selectedProducerId
+                );
+
+                filteredModels.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.ModelId;
+                    option.textContent = item.NazwaModelu;
+                    modelSelect.appendChild(option);
+                });
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const producerSelect = document.getElementById('ProducerSelect');
+
+            if ('@Model.Pojazd.ModelId' && '@Model.Pojazd.ModelId' !== '0') {
+
+                 if (producerSelect.value) {
+                     filterModels();
+                     document.getElementById('ModelSelect').value = '@Model.Pojazd.ModelId';
+                 }
+            }
+        });
+    </script>
 }

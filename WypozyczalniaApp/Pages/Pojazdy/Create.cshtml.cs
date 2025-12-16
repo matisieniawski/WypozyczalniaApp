@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using System.Data;
 using System.Data.Common;
 using Npgsql;
+using System.Text.Json; 
 
 namespace WypozyczalniaApp.Pages.Pojazdy
 {
@@ -24,13 +25,16 @@ namespace WypozyczalniaApp.Pages.Pojazdy
         [BindProperty]
         public Pojazd Pojazd { get; set; } = default!;
 
+   
+        public SelectList AvailableProducenci { get; set; } = default!;
+        public List<ModelPojazdu> AllModelsData { get; set; } = new List<ModelPojazdu>();
+
         public async Task<IActionResult> OnGetAsync()
         {
             var connection = _context.Database.GetDbConnection();
             await connection.OpenAsync();
 
-            var modele = await GetModeleListAsync(connection);
-            ViewData["ModelId"] = new SelectList(modele, "ModelId", "NazwaModelu");
+            await LoadSelectListsAsync(connection);
 
             if (connection.State == ConnectionState.Open) await connection.CloseAsync();
 
@@ -49,37 +53,17 @@ namespace WypozyczalniaApp.Pages.Pojazdy
 
             try
             {
+  
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = @"
-                        INSERT INTO pojazdy (model_id, numer_vin, status, numer_rejestracyjny, data_dodania) 
-                        VALUES (@modelId, @vin, @status, @rejestracja, @dataDodania)";
+                    command.CommandText = @"INSERT INTO pojazdy (model_id, numer_vin, status, numer_rejestracyjny, data_dodania) 
+                                            VALUES (@modelId, @vin, @status, @rejestracja, @dataDodania)";
 
-                    var p1 = command.CreateParameter();
-                    p1.ParameterName = "@modelId";
-                    p1.Value = Pojazd.ModelId;
-                    command.Parameters.Add(p1);
-
-                    var p2 = command.CreateParameter();
-                    p2.ParameterName = "@vin";
-                    p2.Value = (object?)Pojazd.NumerVin ?? DBNull.Value;
-                    command.Parameters.Add(p2);
-
-                    var p3 = command.CreateParameter();
-                    p3.ParameterName = "@status";
-                    p3.Value = (object?)Pojazd.Status ?? DBNull.Value;
-                    command.Parameters.Add(p3);
-
-                    var p4 = command.CreateParameter();
-                    p4.ParameterName = "@rejestracja";
-                    p4.Value = (object?)Pojazd.NumerRejestracyjny ?? DBNull.Value;
-                    command.Parameters.Add(p4);
-
-                    var p5 = command.CreateParameter();
-                    p5.ParameterName = "@dataDodania";
-                    p5.Value = DateTime.SpecifyKind(Pojazd.DataDodania, DateTimeKind.Utc);
-                    command.Parameters.Add(p5);
-
+                    var p1 = command.CreateParameter(); p1.ParameterName = "@modelId"; p1.Value = Pojazd.ModelId; command.Parameters.Add(p1);
+                    var p2 = command.CreateParameter(); p2.ParameterName = "@vin"; p2.Value = (object?)Pojazd.NumerVin ?? DBNull.Value; command.Parameters.Add(p2);
+                    var p3 = command.CreateParameter(); p3.ParameterName = "@status"; p3.Value = (object?)Pojazd.Status ?? DBNull.Value; command.Parameters.Add(p3);
+                    var p4 = command.CreateParameter(); p4.ParameterName = "@rejestracja"; p4.Value = (object?)Pojazd.NumerRejestracyjny ?? DBNull.Value; command.Parameters.Add(p4);
+                    var p5 = command.CreateParameter(); p5.ParameterName = "@dataDodania"; p5.Value = DateTime.SpecifyKind(Pojazd.DataDodania, DateTimeKind.Utc); command.Parameters.Add(p5);
 
                     await command.ExecuteNonQueryAsync();
                 }
@@ -91,10 +75,10 @@ namespace WypozyczalniaApp.Pages.Pojazdy
                 if (ex.SqlState == "23505")
                 {
                     string msg = "Wprowadzona wartoœæ narusza unikalnoœæ danych (duplikat).";
-                    if (ex.ConstraintName?.Contains("vin") == true) msg = "Pojazd o podanym numerze VIN ju¿ istnieje w systemie.";
+                    if (ex.ConstraintName?.Contains("vin") == true || ex.Message.Contains("numer_vin") || ex.Message.Contains("vin")) msg = "Pojazd o podanym numerze VIN ju¿ istnieje w systemie.";
                     if (ex.ConstraintName?.Contains("rejestracyjny") == true) msg = "Pojazd o podanym numerze rejestracyjnym ju¿ istnieje w systemie.";
 
-                    ModelState.AddModelError("", msg);
+                    ModelState.AddModelError("Pojazd.NumerVin", msg);
                 }
                 else if (ex.SqlState == "23502")
                 {
@@ -102,14 +86,14 @@ namespace WypozyczalniaApp.Pages.Pojazdy
                 }
                 else if (ex.SqlState == "23514")
                 {
-                    ModelState.AddModelError("Pojazd.Status", "Niepoprawny status pojazdu.");
+                    ModelState.AddModelError("Pojazd.Status", "Niepoprawny status pojazdu (Dostepny/Wynajety/Serwis).");
                 }
                 else
                 {
                     ModelState.AddModelError("", $"B³¹d bazy danych (SQL {ex.SqlState}): {ex.MessageText}");
                 }
 
-                await ReloadModelListAndReturn();
+                await ReloadSelectListsAsync(connection);
                 return Page();
             }
             catch (Exception ex)
@@ -117,7 +101,7 @@ namespace WypozyczalniaApp.Pages.Pojazdy
                 if (connection.State == ConnectionState.Open) await connection.CloseAsync();
 
                 ModelState.AddModelError("", "Wyst¹pi³ b³¹d krytyczny: " + ex.Message);
-                await ReloadModelListAndReturn();
+                await ReloadSelectListsAsync(connection);
                 return Page();
             }
 
@@ -126,35 +110,57 @@ namespace WypozyczalniaApp.Pages.Pojazdy
             return RedirectToPage("./Index");
         }
 
-        private async Task ReloadModelListAndReturn()
-        {
-            var connection = _context.Database.GetDbConnection();
-            if (connection.State != ConnectionState.Open) await connection.OpenAsync();
-            var modele = await GetModeleListAsync(connection);
-            if (connection.State == ConnectionState.Open) await connection.CloseAsync();
 
-            ViewData["ModelId"] = new SelectList(modele, "ModelId", "NazwaModelu");
-        }
-
-        private async Task<List<ModelPojazdu>> GetModeleListAsync(DbConnection connection)
+        private async Task LoadSelectListsAsync(DbConnection connection)
         {
-            var lista = new List<ModelPojazdu>();
+
+            bool shouldClose = connection.State != ConnectionState.Open;
+            if (shouldClose) await connection.OpenAsync();
+
+    
+            var producenci = new List<Producent>();
             using (var cmd = connection.CreateCommand())
             {
-                cmd.CommandText = "SELECT model_id, nazwa_modelu FROM modelepojazdow ORDER BY nazwa_modelu";
+                cmd.CommandText = "SELECT producent_id, nazwa FROM producenci ORDER BY nazwa";
                 using (var reader = await cmd.ExecuteReaderAsync())
                 {
                     while (await reader.ReadAsync())
                     {
-                        lista.Add(new ModelPojazdu
+                        producenci.Add(new Producent { ProducentId = reader.GetInt32(0), Nazwa = reader.GetString(1) });
+                    }
+                }
+            }
+            AvailableProducenci = new SelectList(producenci, "ProducentId", "Nazwa");
+
+
+            using (var cmd = connection.CreateCommand())
+            {
+                cmd.CommandText = @"
+                    SELECT m.model_id, m.nazwa_modelu, pr.producent_id
+                    FROM modelepojazdow m
+                    JOIN producenci pr ON m.producent_id = pr.producent_id
+                    ORDER BY m.nazwa_modelu";
+
+                using (var reader = await cmd.ExecuteReaderAsync())
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        AllModelsData.Add(new ModelPojazdu
                         {
                             ModelId = reader.GetInt32(0),
-                            NazwaModelu = reader.GetString(1)
+                            NazwaModelu = reader.GetString(1),
+                            ProducentId = reader.GetInt32(2)
                         });
                     }
                 }
             }
-            return lista;
+
+            if (shouldClose) await connection.CloseAsync();
+        }
+
+        private async Task ReloadSelectListsAsync(DbConnection connection)
+        {
+            await LoadSelectListsAsync(connection);
         }
     }
 }
