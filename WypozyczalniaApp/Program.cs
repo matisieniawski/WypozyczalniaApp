@@ -15,35 +15,45 @@ if (!string.IsNullOrEmpty(port))
     });
 }
 
-// --- KLUCZOWA ZMIANA: Stabilne Parsowanie Internal Database URL (URI) z Render ---
-var databaseUrl = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
+// --- OSTATECZNE, STABILNE PARSOWANIE URI DLA RENDER ---
+var databaseUrl = builder.Configuration.GetConnectionString("DefaultConnection");
 
 if (!string.IsNullOrEmpty(databaseUrl))
 {
     string finalConnectionString;
 
-    // 1. Sprawdzamy, czy mamy do czynienia z formatem URI (postgres://)
-    if (databaseUrl.StartsWith("postgres://"))
-    {
-        // KLUCZOWA POPRAWKA: Stabilne parsowanie URI i budowanie ci¹gu s³ownikowego
-        var uri = new Uri(databaseUrl);
-        var userInfo = uri.UserInfo.Split(':');
+    // Zapewnienie, ¿e prefiks jest poprawny dla klasy Uri, nawet jeœli Render u¿ywa 'postgres://'
+    string cleanedUrl = databaseUrl.Replace("postgres://", "postgresql://");
 
-        finalConnectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.PathAndQuery.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Prefer;Trust Server Certificate=true";
-    }
-    else
+    try
     {
-        // Jest to ju¿ tradycyjny format s³ownikowy lub lokalny
-        finalConnectionString = databaseUrl;
-    }
+        var uri = new Uri(cleanedUrl);
 
-    // Zapisujemy skonwertowany ci¹g po³¹czenia
-    builder.Services.AddDbContext<WypozyczalniaDbContext>(options =>
-        options.UseNpgsql(finalConnectionString));
+        // Parsowanie URI i budowanie ci¹gu w formacie s³ownikowym
+        finalConnectionString =
+            $"Host={uri.Host};" +
+            $"Port={uri.Port > 0 ? uri.Port : 5432};" + // U¿ycie domyœlnego 5432, jeœli portu brakuje
+            $"Database={uri.LocalPath.TrimStart('/')};" +
+            $"Username={uri.UserInfo.Split(':')[0]};" +
+            $"Password={uri.UserInfo.Split(':')[1]};" +
+            $"SSL Mode=Prefer;Trust Server Certificate=true";
+
+        // Zapisujemy skonwertowany ci¹g po³¹czenia
+        builder.Services.AddDbContext<WypozyczalniaDbContext>(options =>
+            options.UseNpgsql(finalConnectionString));
+    }
+    catch (Exception ex)
+    {
+        // Jeœli parsowanie zawiedzie, logujemy b³¹d (choæ w logach i tak bêdzie fail)
+        // I u¿ywamy oryginalnej, wadliwej konfiguracji jako fallback.
+        Console.WriteLine($"KRYTYCZNY B£¥D PARSOWANIA URI: {ex.Message}");
+        builder.Services.AddDbContext<WypozyczalniaDbContext>(options =>
+            options.UseNpgsql(databaseUrl));
+    }
 }
 else
 {
-    // U¿ywamy starego kodu, jeœli zmienna nie jest ustawiona (tylko w celach awaryjnych)
+    // U¿ywamy starego kodu, jeœli zmienna nie jest ustawiona
     builder.Services.AddDbContext<WypozyczalniaDbContext>(options =>
         options.UseNpgsql(
             builder.Configuration.GetConnectionString("DefaultConnection")
