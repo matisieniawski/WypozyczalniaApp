@@ -32,7 +32,7 @@ if (!string.IsNullOrEmpty(databaseUrl))
         // Parsowanie URI i budowanie ci¹gu w formacie s³ownikowym
         finalConnectionString =
             $"Host={uri.Host};" +
-            $"Port={uri.Port > 0 ? uri.Port : 5432};" + // U¿ycie domyœlnego 5432, jeœli portu brakuje
+            $"Port={(uri.Port > 0 ? uri.Port : 5432)};" + // POPRAWIONE: Dodano nawiasy wokó³ warunku
             $"Database={uri.LocalPath.TrimStart('/')};" +
             $"Username={uri.UserInfo.Split(':')[0]};" +
             $"Password={uri.UserInfo.Split(':')[1]};" +
