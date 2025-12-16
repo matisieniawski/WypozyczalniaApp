@@ -25,6 +25,7 @@ namespace WypozyczalniaApp.Pages.Pojazdy
 
         public IList<Pojazd> Pojazd { get; set; } = new List<Pojazd>();
 
+     
         [BindProperty(SupportsGet = true)]
         public string SortColumn { get; set; } = "Status";
 
@@ -43,6 +44,10 @@ namespace WypozyczalniaApp.Pages.Pojazdy
         [BindProperty(SupportsGet = true)]
         public string VINFilter { get; set; } = string.Empty;
 
+        [BindProperty(SupportsGet = true)]
+        public int? IdSearch { get; set; } 
+
+    
         public SelectList AvailableModels { get; set; } = default!;
         public SelectList AvailableProducers { get; set; } = default!;
         public SelectList AvailableStatuses { get; set; } = default!;
@@ -55,12 +60,12 @@ namespace WypozyczalniaApp.Pages.Pojazdy
             var connection = _context.Database.GetDbConnection();
             await connection.OpenAsync();
 
-
+     
             await LoadFilterListsAsync(connection);
 
             using (var command = connection.CreateCommand())
             {
- 
+              
                 string sqlBase = @"
                     SELECT 
                         p.pojazd_id, p.numer_vin, p.status, p.model_id, p.numer_rejestracyjny, p.data_dodania,
@@ -70,6 +75,13 @@ namespace WypozyczalniaApp.Pages.Pojazdy
                     JOIN producenci pr ON m.producent_id = pr.producent_id";
 
                 var sqlWhere = new StringBuilder(" WHERE 1=1 ");
+
+                
+                if (IdSearch.HasValue)
+                {
+                    sqlWhere.Append(" AND p.pojazd_id = @idSearch");
+                    AddParam(command, "@idSearch", IdSearch.Value);
+                }
 
                 if (!string.IsNullOrEmpty(ModelFilter))
                 {
@@ -91,12 +103,16 @@ namespace WypozyczalniaApp.Pages.Pojazdy
 
                 if (!string.IsNullOrEmpty(VINFilter))
                 {
+                 
                     sqlWhere.Append(" AND (p.numer_vin ILIKE @vinFilter OR p.numer_rejestracyjny ILIKE @vinFilter)");
                     AddParam(command, "@vinFilter", $"%{VINFilter}%");
                 }
 
+
+         
                 string sortField = SortColumn switch
                 {
+                    "Id" => "p.pojazd_id",
                     "Model" => "m.nazwa_modelu",
                     "Producent" => "pr.nazwa",
                     "VIN" => "p.numer_vin",
@@ -108,19 +124,20 @@ namespace WypozyczalniaApp.Pages.Pojazdy
 
                 string sqlOrderBy = $" ORDER BY {sortField} {sortDir}";
 
-
+            
                 command.CommandText = sqlBase + sqlWhere.ToString() + sqlOrderBy;
 
                 using (var reader = await command.ExecuteReaderAsync())
                 {
                     while (await reader.ReadAsync())
                     {
+                       
                         int vinIndex = 1;
                         int statusIndex = 2;
                         int regIndex = 4;
                         int dataDodaniaIndex = 5;
                         int modelNameIndex = 6;
-                        int cenaDobaIndex = 7; 
+                        int cenaDobaIndex = 7;
                         int producentNameIndex = 9;
 
                         var nowyPojazd = new Pojazd
@@ -155,20 +172,23 @@ namespace WypozyczalniaApp.Pages.Pojazdy
 
         public async Task<IActionResult> OnPostExportCsv()
         {
+
             await OnGetAsync();
 
             if (!Pojazd.Any())
             {
                 TempData["ErrorMessage"] = "Brak pojazdów spe³niaj¹cych kryteria do wyeksportowania.";
-                return RedirectToPage(new { SortColumn, SortDirection, ModelFilter, ProducerFilter, StatusFilter, VINFilter });
+                return RedirectToPage(new { SortColumn, SortDirection, ModelFilter, ProducerFilter, StatusFilter, VINFilter, IdSearch });
             }
 
             var builder = new StringBuilder();
 
+ 
             builder.AppendLine("Pojazd ID;VIN;Rejestracja;Model;Producent;Status;Data Dodania;Cena Dobowa");
 
             foreach (var pojazd in Pojazd)
             {
+ 
                 builder.AppendLine($"{pojazd.PojazdId};{pojazd.NumerVin};{pojazd.NumerRejestracyjny};{pojazd.Model.NazwaModelu};{pojazd.Model.Producent.Nazwa};{pojazd.Status};{pojazd.DataDodania.ToShortDateString()};{pojazd.Model.CenaZaDobe}");
             }
 
@@ -188,10 +208,13 @@ namespace WypozyczalniaApp.Pages.Pojazdy
 
         private async Task LoadFilterListsAsync(DbConnection connection)
         {
+  
             bool shouldClose = connection.State != ConnectionState.Open;
             if (shouldClose) await connection.OpenAsync();
 
 
+
+    
             var producenci = new List<Producent>();
             using (var cmd = connection.CreateCommand())
             {
@@ -228,8 +251,10 @@ namespace WypozyczalniaApp.Pages.Pojazdy
                 }
             }
 
+          
             var modele = AllModelsData.Select(m => m.NazwaModelu).Distinct().ToList();
             AvailableModels = new SelectList(modele, ModelFilter);
+
 
             AvailableStatuses = new SelectList(new List<string> { "Dostepny", "Wynajety", "Serwis" }, StatusFilter);
 

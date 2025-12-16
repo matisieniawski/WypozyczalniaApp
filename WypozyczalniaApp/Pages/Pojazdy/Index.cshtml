@@ -12,6 +12,13 @@
 
     <div class="btn-group" role="group">
         <form method="post" asp-page-handler="ExportCsv">
+            <input type="hidden" name="SortColumn" value="@Model.SortColumn" />
+            <input type="hidden" name="SortDirection" value="@Model.SortDirection" />
+            <input type="hidden" name="ProducerFilter" value="@Model.ProducerFilter" />
+            <input type="hidden" name="ModelFilter" value="@Model.ModelFilter" />
+            <input type="hidden" name="StatusFilter" value="@Model.StatusFilter" />
+            <input type="hidden" name="VINFilter" value="@Model.VINFilter" />
+            <input type="hidden" name="IdSearch" value="@Model.IdSearch" />
             <button type="submit" class="btn btn-sm btn-success text-white shadow-sm me-2" title="Eksport danych floty do pliku CSV">
                 <i class="fa-solid fa-file-csv me-1"></i> Eksport (CSV)
             </button>
@@ -26,11 +33,18 @@
     </div>
 </div>
 
+
 <div class="card shadow-sm mb-4">
     <div class="card-body">
         <form method="get" class="row g-3 align-items-end" id="filterForm">
 
-            <div class="col-md-3">
+
+            <div class="col-md-1">
+                <label for="IdSearch" class="form-label small text-muted">ID</label>
+                <input type="number" id="IdSearch" name="IdSearch" value="@Model.IdSearch" class="form-control" placeholder="ID" />
+            </div>
+
+            <div class="col-md-2">
                 <label for="ProducerFilter" class="form-label small text-muted">Producent</label>
 
                 <select id="ProducerFilter" name="ProducerFilter" class="form-select" asp-items="Model.AvailableProducers" onchange="filterModels()">
@@ -40,6 +54,7 @@
 
             <div class="col-md-2">
                 <label for="ModelFilter" class="form-label small text-muted">Model</label>
+
                 <select id="ModelFilter" name="ModelFilter" class="form-select" asp-items="Model.AvailableModels">
                     <option value="">Wszystkie Modele</option>
                 </select>
@@ -107,7 +122,8 @@
                                             ProducerFilter = Model.ProducerFilter,
                                             ModelFilter = Model.ModelFilter,
                                             StatusFilter = Model.StatusFilter,
-                                            VINFilter = Model.VINFilter
+                                            VINFilter = Model.VINFilter,
+                                            IdSearch = Model.IdSearch 
                                         });
 
                                         return new HtmlString($@"
@@ -117,6 +133,7 @@
                                     }
                                 }
 
+                                <th class="ps-3">@CreateSortLink("Id", "ID")</th> 
                                 <th>@CreateSortLink("Model", "Model")</th>
                                 <th>@CreateSortLink("Producent", "Producent")</th>
                                 <th>@CreateSortLink("VIN", "VIN")</th>
@@ -129,6 +146,7 @@
                             @foreach (var item in Model.Pojazd)
                             {
                                 <tr>
+                                    <td class="ps-3 small text-muted">#@item.PojazdId</td> 
                                     <td class="fw-bold">@item.Model.NazwaModelu</td>
                                     <td>@Html.DisplayFor(modelItem => item.Model.Producent.Nazwa)</td>
                                     <td class="text-muted"><small>@Html.DisplayFor(modelItem => item.NumerVin)</small></td>
@@ -147,6 +165,7 @@
                                     </td>
                                     <td class="text-end">
                                         <div class="btn-group" role="group">
+
                                             <button type="button"
                                                     class="btn btn-sm btn-info text-white"
                                                     title="Pokaż szczegóły"
@@ -185,6 +204,7 @@
                 <h5 class="card-title">Wybierz Pojazd</h5>
                 <p class="card-text small text-muted">Kliknij "Szczegóły" w tabeli, aby zobaczyć rozszerzone dane.</p>
                 <div id="PojazdDetails" class="text-start mt-3">
+
                 </div>
             </div>
         </div>
@@ -198,6 +218,7 @@
 
     <script>
 
+
         const allModelsDataJson = '@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.AllModelsData))';
         let allModelsData;
 
@@ -206,35 +227,32 @@
             allModelsData = JSON.parse(allModelsDataJson);
         } catch (e) {
             console.error('Błąd parsowania danych modeli. Upewnij się, że dane w modelu są czyste.', e);
+  
             allModelsData = [];
         }
 
         const currentModelSelection = '@Model.ModelFilter';
 
 
-
         function filterModels() {
             const producerSelect = document.getElementById('ProducerFilter');
             const modelSelect = document.getElementById('ModelFilter');
             const selectedProducer = producerSelect.value;
-
-
             const defaultOption = modelSelect.options[0];
-
             const previousModelValue = modelSelect.value;
 
             modelSelect.innerHTML = '';
 
-
+     
             if (defaultOption) {
                 modelSelect.appendChild(defaultOption);
             } else {
+ 
                 const newDefaultOption = document.createElement('option');
                 newDefaultOption.value = '';
                 newDefaultOption.textContent = 'Wszystkie Modele';
                 modelSelect.appendChild(newDefaultOption);
             }
-
 
             const availableModels = new Set();
 
@@ -255,20 +273,22 @@
                 }
             });
 
+  
             if (previousModelValue && modelSelect.value !== previousModelValue) {
-                modelSelect.value = '';
+                modelSelect.value = ''; 
             }
         }
 
+
         document.addEventListener('DOMContentLoaded', function() {
-           
+
             if ('@Model.ProducerFilter' && '@Model.ProducerFilter' !== '') {
-                
+                 
                 filterModels();
             }
-
         });
 
+        
 
         function loadPojazdDetails(pojazdId, numerRejestracyjny, dataDodania) {
             const container = document.getElementById('PojazdDetails');
@@ -276,9 +296,9 @@
 
             const row = $(`button[data-pojazd-id='${pojazdId}']`).closest('tr');
 
-            const vin = row.find('td:eq(2)').text().trim();
-            const model = row.find('td:eq(0)').text().trim();
-            const producent = row.find('td:eq(1)').text().trim();
+            const vin = row.find('td:eq(3)').text().trim(); 
+            const model = row.find('td:eq(1)').text().trim(); 
+            const producent = row.find('td:eq(2)').text().trim(); 
             const status = row.find('.badge').text().trim();
 
 
@@ -300,6 +320,7 @@
                     return response.json();
                 })
                 .then(data => {
+                  
                     const ostSerwis = data.ostatniSerwis ? new Date(data.ostatniSerwis).toLocaleDateString() : 'Brak';
                     const ostWynajem = data.ostatniWynajem ? new Date(data.ostatniWynajem).toLocaleDateString() : 'Brak';
 
