@@ -15,30 +15,35 @@ if (!string.IsNullOrEmpty(port))
     });
 }
 
-// --- KLUCZOWA ZMIANA: Konwersja formatu URL z Render na format oczekiwany przez Npgsql ---
+// --- KLUCZOWA ZMIANA: Stabilne Parsowanie Internal Database URL (URI) z Render ---
 var databaseUrl = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
 
-// Sprawdzamy, czy string po³¹czenia u¿ywa formatu URL (postgres://)
-if (!string.IsNullOrEmpty(databaseUrl) && databaseUrl.StartsWith("postgres://"))
+if (!string.IsNullOrEmpty(databaseUrl))
 {
-    // KLUCZOWA POPRAWKA: Render u¿ywa 'postgres://', a standardowo powinno byæ 'postgresql://'.
-    // Zamieniamy 'postgres://' na 'Host=', aby Npgsql móg³ poprawnie sparsowaæ resztê ci¹gu jako URI.
-    databaseUrl = databaseUrl.Replace("postgres://", "Host=");
+    string finalConnectionString;
 
-    // Tworzymy NpgsqlConnectionStringBuilder bezpoœrednio z ci¹gu URL (co jest mo¿liwe, jeœli poprawiliœmy prefix)
-    var connBuilder = new NpgsqlConnectionStringBuilder(databaseUrl);
+    // 1. Sprawdzamy, czy mamy do czynienia z formatem URI (postgres://)
+    if (databaseUrl.StartsWith("postgres://"))
+    {
+        // KLUCZOWA POPRAWKA: Stabilne parsowanie URI i budowanie ci¹gu s³ownikowego
+        var uri = new Uri(databaseUrl);
+        var userInfo = uri.UserInfo.Split(':');
 
-    // Dodajemy wymagane ustawienia SSL dla Render.com
-    connBuilder.SslMode = SslMode.Prefer;
-    connBuilder.TrustServerCertificate = true;
+        finalConnectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.PathAndQuery.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Prefer;Trust Server Certificate=true";
+    }
+    else
+    {
+        // Jest to ju¿ tradycyjny format s³ownikowy lub lokalny
+        finalConnectionString = databaseUrl;
+    }
 
-    // Zapisujemy nowy, ju¿ skonwertowany ci¹g po³¹czenia do konfiguracji EF Core
+    // Zapisujemy skonwertowany ci¹g po³¹czenia
     builder.Services.AddDbContext<WypozyczalniaDbContext>(options =>
-        options.UseNpgsql(connBuilder.ToString()));
+        options.UseNpgsql(finalConnectionString));
 }
 else
 {
-    // U¿ywamy starego kodu, jeœli zmienna nie jest ustawiona lub jest w tradycyjnym formacie
+    // U¿ywamy starego kodu, jeœli zmienna nie jest ustawiona (tylko w celach awaryjnych)
     builder.Services.AddDbContext<WypozyczalniaDbContext>(options =>
         options.UseNpgsql(
             builder.Configuration.GetConnectionString("DefaultConnection")
